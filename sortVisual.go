@@ -20,7 +20,9 @@ var (
 	QS_SLEEP = time.Millisecond  // Quick sort sleep time
 	CHANGE_SLEEP = time.Millisecond/2  // Time for changeDataBetween to sleep
 	BBL_SLEEP = time.Microsecond // Bubble sort sleep time
-	SHUFFLE_SLEEP = time.Millisecond
+	INST_SLEEP = time.Microsecond * 2
+
+	SHUFFLE_SLEEP = time.Microsecond * 500
 )
 
 const (
@@ -115,7 +117,7 @@ func (a *AnimArr) Draw(dt float32) {
 			clr = rl.Lime
 		} else {
 			normal := uint8((a.Data[i]/a.maxValue)*255)  // Value normalised to 255
-			clr = rl.NewColor(normal, normal, normal, 255)
+			clr = rl.NewColor(normal/3, normal/2, normal, 255)
 		}
 		a.drawLine(i, clr)
 	}
@@ -257,6 +259,22 @@ func (a *AnimArr) BubbleSort() {
 	a.Active2 = -1
 }
 
+func (a *AnimArr) InsertionSort() {
+	for i := 1; i < len(a.Data); i++ {
+		a.PivotInd = i
+		for j := i; j > 0 && a.Data[j-1] > a.Data[j]; j-- {
+			a.Active = j
+			a.Active2 = j-1
+			a.Data[j], a.Data[j-1] = a.Data[j-1], a.Data[j]
+			time.Sleep(INST_SLEEP)
+		}
+	}
+	a.Active = -1
+	a.Active2 = -1
+	a.PivotInd = -1
+	a.Sorted = true
+}
+
 
 //func (a *AnimArr) MergeSort(start, end int) {
 
@@ -283,21 +301,26 @@ func (a *AnimArr) DoSort(sort string) {
 			a.BubbleSort()
 			a.Sorting = false
 		}()
+	} else if sort == "insertion" {
+		go func() {
+			a.InsertionSort()
+			a.Sorting = false
+		}()
 	}
 }
 
 func main() {
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
-	rl.SetTargetFPS(144)
+	rl.SetTargetFPS(60)
 
 	anim := AnimArr{}
-	anim.Init(2, true, false, 1)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(2, true, true, 2)  // Input line thickness, if it is linear, and if it is color only here
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling && !anim.Sorting {  // When 'r' is pressed, shuffle the array.
 			go anim.Shuffle(2, true)
 		} else if rl.IsKeyPressed(rl.KeyS) && !anim.Sorting {  // When 's' is pressed, sort the array.
-			anim.DoSort("quick")
+			anim.DoSort("insertion")
 		} else if rl.IsKeyPressed(rl.KeyP) && !anim.Sorting {
 			anim.Data = regularQuickSort(anim.Data)
 			anim.Sorted = true
