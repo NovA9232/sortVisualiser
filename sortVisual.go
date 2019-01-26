@@ -17,9 +17,10 @@ var (
 	//coral rl.Color = NewColor(218, 65, 103, 255)
 	audioStream rl.AudioStream
 
-	SORT_SLEEP = time.Millisecond
-	BBL_SLEEP = time.Microsecond
-	SHUFFLE_SLEEP = time.Millisecond/4
+	QS_SLEEP = time.Millisecond  // Quick sort sleep time
+	CHANGE_SLEEP = time.Millisecond/2  // Time for changeDataBetween to sleep
+	BBL_SLEEP = time.Microsecond // Bubble sort sleep time
+	SHUFFLE_SLEEP = time.Millisecond
 )
 
 const (
@@ -120,10 +121,6 @@ func (a *AnimArr) Draw(dt float32) {
 	}
 }
 
-func (a *AnimArr) playSound(index int) {
-
-}
-
 func (a *AnimArr) Generate(num, max int) []float32 {	// Generates array
 	a.maxValue = float32(max)
 	var out []float32
@@ -141,6 +138,12 @@ func (a *AnimArr) GenerateLinear(start, finish, jump float32) []float32 {
 		out = append(out, i)
 	}
 	return out
+}
+
+func (a *AnimArr) Reverse() {
+	for i, j := 0, len(a.Data)-1; i < j; i, j = i+1, j-1 {
+		a.Data[i], a.Data[j] = a.Data[j], a.Data[i]
+	}
 }
 
 func (a *AnimArr) swapElements(i1, i2 int) {
@@ -171,7 +174,7 @@ func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bo
 	for i := start; i < end; i++ {
 		a.Active = i
 		a.Data[i] = newSlice[i-start]
-		if sleep { time.Sleep(SORT_SLEEP/2) }  // Sleep for half the time cause this bit should be quick
+		if sleep { time.Sleep(CHANGE_SLEEP) }  // Sleep for half the time cause this bit should be quick
 	}
 }
 
@@ -223,7 +226,7 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 			} else {
 				middle = append(middle, a.Data[i])
 			}
-			time.Sleep(SORT_SLEEP)
+			time.Sleep(QS_SLEEP)
 		}
 
 		a.PivotInd = -1
@@ -287,29 +290,22 @@ func main() {
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
 	rl.SetTargetFPS(144)
 
-	//rl.InitAudioDevice()
-	//audioStream = rl.InitAudioStream(22050, 32, 1)
-	//rl.PlayAudioStream(audioStream)
-
-	//audioData := make([]float32, maxSamples)
-
-	//audioStream = rl.NewAudioStream(44000, 16, 1)
 	anim := AnimArr{}
 	anim.Init(2, true, false, 1)  // Input line thickness, if it is linear, and if it is color only here
 
 	for !rl.WindowShouldClose() {
-		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling {  // When 'r' is pressed, shuffle the array.
+		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling && !anim.Sorting {  // When 'r' is pressed, shuffle the array.
+			go anim.Shuffle(2, true)
+		} else if rl.IsKeyPressed(rl.KeyS) && !anim.Sorting {  // When 's' is pressed, sort the array.
+			anim.DoSort("quick")
+		} else if rl.IsKeyPressed(rl.KeyP) && !anim.Sorting {
+			anim.Data = regularQuickSort(anim.Data)
+			anim.Sorted = true
+		} else if rl.IsKeyPressed(rl.KeyI) {
 			go func() {
-				anim.Shuffle(4, true)
+				anim.Reverse()
 			}()
 		}
-
-		if rl.IsKeyPressed(rl.KeyS) && !anim.Sorting {  // When 's' is pressed, sort the array.
-			anim.DoSort("quick")
-		}
-
-		//if rl.IsAudioBufferProcessed(audioStream) {  // Refil audio stream
-		//}
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
