@@ -9,15 +9,21 @@ import (
 )
 
 var (
-	SCREEN_WIDTH  float32 = 800
+	SCREEN_WIDTH  float32 = 1600
 	SCREEN_HEIGHT float32 = 800
 
 	//violet rl.Color = NewColor(61, 38, 69, 255)
 	//raspberry rl.Color = NewColor(131, 33, 97, 255)
 	//coral rl.Color = NewColor(218, 65, 103, 255)
+	audioStream rl.AudioStream
 
 	SORT_SLEEP = time.Millisecond
 	SHUFFLE_SLEEP = time.Millisecond/2
+)
+
+const (
+	maxSamples = 22050
+	maxSamplesPerUpdate = 4096
 )
 
 type AnimArr struct {
@@ -45,10 +51,6 @@ func (a *AnimArr) Init(lineWidth int) {
 	a.linear		= true
 	//a.Data			= a.Generate(a.lineNum, a.lineNum*2)
 	a.Data			= a.GenerateLinear(0, SCREEN_HEIGHT, SCREEN_HEIGHT/float32(a.lineNum))
-
-	//a.sortedData = make([]int, len(a.Data))
-	//copy(a.sortedData, a.Data)
-	//a.sortedData = regularQuickSort(a.sortedData)
 }
 
 func regularQuickSort(arr []float32) []float32 {  // Just a quick sort to sort the array for comparison (if needed)
@@ -101,6 +103,10 @@ func (a *AnimArr) Draw(dt float32) {
 			a.drawLine(i, rl.NewColor(normal, normal, normal, 255))
 		}
 	}
+}
+
+func (a *AnimArr) playSound(index int) {
+
 }
 
 func (a *AnimArr) Generate(num, max int) []float32 {	// Generates array
@@ -202,7 +208,7 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 			} else {
 				middle = append(middle, a.Data[i])
 			}
-			//time.Sleep(SORT_SLEEP/500) // Bubble sort is quite slow anyway
+			time.Sleep(SORT_SLEEP)
 		}
 
 		a.PivotInd = -1
@@ -225,7 +231,7 @@ func (a *AnimArr) BubbleSort() {
 				a.Data[i], a.Data[i+1] = a.Data[i+1], a.Data[i]
 				sorted = false
 			}
-			time.Sleep(SORT_SLEEP)
+			time.Sleep(SORT_SLEEP/10)
 		}
 	}
 	a.Sorted = true
@@ -259,22 +265,32 @@ func (a *AnimArr) DoSort(sort string) {
 }
 
 func main() {
-	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Egg")
+	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
 	rl.SetTargetFPS(144)
 
+	rl.InitAudioDevice()
+	audioStream = rl.InitAudioStream(22050, 32, 1)
+	rl.PlayAudioStream(audioStream)
+
+	//audioData := make([]float32, maxSamples)
+
+	//audioStream = rl.NewAudioStream(44000, 16, 1)
 	anim := AnimArr{}
-	anim.Init(4)
+	anim.Init(2)
 
 	for !rl.WindowShouldClose() {
-		if rl.IsKeyPressed(82) && !anim.Shuffling {  // When 'r' is pressed, shuffle the array.
+		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling {  // When 'r' is pressed, shuffle the array.
 			go func() {
 				anim.Shuffle(4, true)
 			}()
 		}
 
-		if rl.IsKeyPressed(83) {  // When 's' is pressed, sort the array.
-			anim.DoSort("bubble")
+		if rl.IsKeyPressed(rl.KeyS) {  // When 's' is pressed, sort the array.
+			anim.DoSort("quick")
 		}
+
+		//if rl.IsAudioBufferProcessed(audioStream) {  // Refil audio stream
+		//}
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
