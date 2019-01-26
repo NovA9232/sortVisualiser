@@ -18,7 +18,8 @@ var (
 	audioStream rl.AudioStream
 
 	SORT_SLEEP = time.Millisecond
-	SHUFFLE_SLEEP = time.Millisecond/2
+	BBL_SLEEP = time.Microsecond
+	SHUFFLE_SLEEP = time.Millisecond/4
 )
 
 const (
@@ -27,18 +28,19 @@ const (
 )
 
 type AnimArr struct {
-	Data			 []float32
-	sortedData []int
-	lineNum			 int
-	lineWidth		 int
-	Active			 int		// Index of current element being operated on.
-	Active2			 int   // Secondary active, for swapping elements.
-	PivotInd		 int   // For highlighting pivot when doing quickSort.
-	maxValue		float32
-	Sorted			bool
-	Sorting			bool
-	Shuffling		bool
-	linear			bool
+	Data					[]float32
+	sortedData		[]int
+	lineNum				int
+	lineWidth			int
+	Active				int		// Index of current element being operated on.
+	Active2				int   // Secondary active, for swapping elements.
+	PivotInd			int   // For highlighting pivot when doing quickSort.
+	maxValue			float32
+	Sorted				bool
+	Sorting				bool
+	Shuffling			bool
+	linear				bool
+	colorOnly			bool // Do not show height if true
 }
 
 func (a *AnimArr) Init(lineWidth int) {
@@ -49,6 +51,7 @@ func (a *AnimArr) Init(lineWidth int) {
 	a.PivotInd	= -1
 	a.Shuffling = false
 	a.linear		= true
+	a.colorOnly = true
 	a.Sorted		= a.linear
 	a.Sorting   = false
 	//a.Data			= a.Generate(a.lineNum, a.lineNum*2)
@@ -57,10 +60,10 @@ func (a *AnimArr) Init(lineWidth int) {
 
 func regularQuickSort(arr []float32) []float32 {  // Just a quick sort to sort the array for comparison (if needed)
 	if len(arr) < 2 { return arr }
-	var left []float32
+	var left	 []float32
 	var middle []float32
-	var right []float32
-	var pivot float32 = arr[len(arr)/2]
+	var right  []float32
+	var pivot		 float32 = arr[len(arr)/2]
 
 	for i := 0; i < len(arr); i++ {
 		if arr[i] < pivot {
@@ -82,7 +85,9 @@ func (a *AnimArr) getLineY(val float32) float32 {   // Lower case incase I want 
 func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
 	var x = float32(i*a.lineWidth)
 	var y float32
-	if a.linear {
+	if a.colorOnly {
+		y = 0
+	} else if a.linear {
 		y = SCREEN_HEIGHT-a.Data[i]
 	} else {
 		y = a.getLineY(a.Data[i])
@@ -91,19 +96,21 @@ func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
 }
 
 func (a *AnimArr) Draw(dt float32) {
+	var clr rl.Color
 	for i := 0; i < a.lineNum; i++ {
 		if i == a.Active {
-			a.drawLine(i, rl.Green)
+			clr = rl.Green
 		} else if i == a.Active2 {
-			a.drawLine(i, rl.Red)
+			clr = rl.Red
 		} else if i == a.PivotInd {
-			a.drawLine(i, rl.Yellow)
-		} else if a.Sorted {
-			a.drawLine(i, rl.Lime)
+			clr = rl.Yellow
+		} else if a.Sorted && !a.colorOnly {
+			clr = rl.Lime
 		} else {
 			normal := uint8((a.Data[i]/a.maxValue)*255)  // Value normalised to 255
-			a.drawLine(i, rl.NewColor(normal, normal, normal, 255))
+			clr = rl.NewColor(normal, normal, normal, 255)
 		}
+		a.drawLine(i, clr)
 	}
 }
 
@@ -158,7 +165,7 @@ func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bo
 	for i := start; i < end; i++ {
 		a.Active = i
 		a.Data[i] = newSlice[i-start]
-		if sleep { time.Sleep(SORT_SLEEP) }
+		if sleep { time.Sleep(SORT_SLEEP/2) }  // Sleep for half the time cause this bit should be quick
 	}
 }
 
@@ -233,7 +240,7 @@ func (a *AnimArr) BubbleSort() {
 				a.Data[i], a.Data[i+1] = a.Data[i+1], a.Data[i]
 				sorted = false
 			}
-			time.Sleep(SORT_SLEEP/10)
+			time.Sleep(BBL_SLEEP)
 		}
 	}
 	a.Sorted = true
@@ -274,15 +281,15 @@ func main() {
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
 	rl.SetTargetFPS(144)
 
-	rl.InitAudioDevice()
-	audioStream = rl.InitAudioStream(22050, 32, 1)
-	rl.PlayAudioStream(audioStream)
+	//rl.InitAudioDevice()
+	//audioStream = rl.InitAudioStream(22050, 32, 1)
+	//rl.PlayAudioStream(audioStream)
 
 	//audioData := make([]float32, maxSamples)
 
 	//audioStream = rl.NewAudioStream(44000, 16, 1)
 	anim := AnimArr{}
-	anim.Init(2)
+	anim.Init(2)  // Input line thickness here
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling {  // When 'r' is pressed, shuffle the array.
