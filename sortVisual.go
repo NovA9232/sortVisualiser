@@ -16,27 +16,55 @@ var (
 	//raspberry rl.Color = NewColor(131, 33, 97, 255)
 	//coral rl.Color = NewColor(218, 65, 103, 255)
 
-	SORT_SLEEP = time.Millisecond * 10
-	SHUFFLE_SLEEP = time.Millisecond/2
+	SORT_SLEEP = time.Millisecond
+	SHUFFLE_SLEEP = time.Millisecond
 )
 
 type AnimArr struct {
-	Data []int
-	lineNum int
-	lineWidth int
-	Active int		// Index of current element being operated on.
-	Active2 int   // Secondary active, for swapping elements.
-	Sorted bool
-	Shuffling bool
+	Data			 []int
+	sortedData []int
+	lineNum			 int
+	lineWidth		 int
+	Active			 int		// Index of current element being operated on.
+	Active2			 int   // Secondary active, for swapping elements.
+	PivotInd		 int   // For highlighting pivot when doing quickSort.
+	Sorted			bool
+	Shuffling		bool
 }
 
 func (a *AnimArr) Init(lineWidth int) {
 	a.lineWidth = lineWidth
+	a.lineNum = int(math.Floor(float64(SCREEN_WIDTH/float32(a.lineWidth))))
+	a.Active		= -1
+	a.Active2		= -1
+	a.PivotInd	= -1
 	a.Sorted		= false
 	a.Shuffling = false
-	a.lineNum = int(math.Floor(float64(SCREEN_WIDTH/float32(a.lineWidth))))
-	a.Data = a.Generate(a.lineNum, a.lineNum*2)
+	a.Data			= a.Generate(a.lineNum, a.lineNum*2)
 
+	a.sortedData = make([]int, len(a.Data))
+	copy(a.sortedData, a.Data)
+	a.sortedData = regularQuickSort(a.sortedData)
+}
+
+func regularQuickSort(arr []int) []int {  // Just a quick sort to sort the array for comparison (if needed)
+	if len(arr) < 2 { return arr }
+	var left []int
+	var middle []int
+	var right []int
+	var pivot int = arr[len(arr)/2]
+
+	for i := 0; i < len(arr); i++ {
+		if arr[i] < pivot {
+			left = append(left, arr[i])
+		} else if arr[i] > pivot {
+			right = append(right, arr[i])
+		} else {
+			middle = append(middle, arr[i])
+		}
+	}
+
+	return append(append(regularQuickSort(left), middle...), regularQuickSort(right)...)
 }
 
 func (a *AnimArr) getLineY(val int) float32 {   // Lower case incase I want to have this as a package.
@@ -54,6 +82,8 @@ func (a *AnimArr) Draw(dt float32) {
 			a.drawLine(i, rl.Green)
 		} else if i == a.Active2 {
 			a.drawLine(i, rl.Red)
+		} else if i == a.PivotInd {
+			a.drawLine(i, rl.Yellow)
 		} else if a.Sorted {
 			a.drawLine(i, rl.Lime)
 		} else {
@@ -102,12 +132,13 @@ func (a *AnimArr) changeDataBetween(start, end int, newSlice []int, sleep bool) 
 	}
 }
 
-func (a *AnimArr) QuickSort(start, end int, sleep bool) {   // Start and end of part of array to sort
+func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of array to sort.
 	if end-start > 1 {
 		var left []int
 		var middle []int
 		var right []int
-		var pivot int = a.Data[int(math.Floor(float64(start+end)/2))]
+		a.PivotInd = int(math.Floor(float64(start+end)/2))
+		var pivot int = a.Data[a.PivotInd]
 
 		for i := start; i < end; i++ {
 			a.Active = i
@@ -118,20 +149,26 @@ func (a *AnimArr) QuickSort(start, end int, sleep bool) {   // Start and end of 
 			} else {
 				middle = append(middle, a.Data[i])
 			}
-			if sleep { time.Sleep(SORT_SLEEP) }
+			time.Sleep(SORT_SLEEP)
 		}
+
+		a.PivotInd = -1
 		a.changeDataBetween(start, end, append(append(left, middle...), right...), true)
-		a.QuickSort(start, start+len(left), sleep)
-		a.QuickSort(start+len(left)+len(middle), start+len(left)+len(middle)+len(right), sleep)
+		a.QuickSort(start, start+len(left))
+		a.QuickSort(start+len(left)+len(middle), start+len(left)+len(middle)+len(right))
 	}
 }
 
+//func (a *AnimArr) MergeSort(start, end int) {
+
+//}
+
 func main() {
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Egg")
-	rl.SetTargetFPS(144)
+	rl.SetTargetFPS(60)
 
 	anim := AnimArr{}
-	anim.Init(10)
+	anim.Init(1)
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyPressed(82) && !anim.Shuffling {  // When 'r' is pressed, shuffle the array.
@@ -143,7 +180,7 @@ func main() {
 		if rl.IsKeyPressed(83) {  // When 's' is pressed, sort the array.
 			go func() {
 				anim.Sorted = false
-				anim.QuickSort(0, len(anim.Data), true)
+				anim.QuickSort(0, len(anim.Data))
 				fmt.Println("Finished sort.")
 				anim.Active = -1
 				anim.Sorted = true
