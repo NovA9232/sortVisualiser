@@ -154,7 +154,7 @@ func (a *AnimArr) Shuffle(times int, sleep bool) {
 	var max int = len(a.Data)
 	for i := 0; i < times; i++ {
 		for j := 0; j < len(a.Data); j++ {
-			a.Active	= rand.Intn(max)
+			a.Active	= j
 			a.Active2 = rand.Intn(max)
 			a.swapElements(a.Active, a.Active2)
 			if sleep { time.Sleep(SHUFFLE_SLEEP) }
@@ -295,7 +295,7 @@ func main() {
 
 	//audioStream = rl.NewAudioStream(44000, 16, 1)
 	anim := AnimArr{}
-	anim.Init(2, true, true, 1)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(2, true, false, 1)  // Input line thickness, if it is linear, and if it is color only here
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling {  // When 'r' is pressed, shuffle the array.
