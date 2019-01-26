@@ -35,6 +35,7 @@ type AnimArr struct {
 	Active				int		// Index of current element being operated on.
 	Active2				int   // Secondary active, for swapping elements.
 	PivotInd			int   // For highlighting pivot when doing quickSort.
+	nonLinearMult int
 	maxValue			float32
 	Sorted				bool
 	Sorting				bool
@@ -43,19 +44,24 @@ type AnimArr struct {
 	colorOnly			bool // Do not show height if true
 }
 
-func (a *AnimArr) Init(lineWidth int) {
+func (a *AnimArr) Init(lineWidth int, linear, colorOnly bool, nonLinVarianceMult int) {  // nonLinVarianceMult is a multiplier for how variant the data is if linear is false
 	a.lineWidth = lineWidth
 	a.lineNum = int(math.Floor(float64(SCREEN_WIDTH/float32(a.lineWidth))))
 	a.Active		= -1
 	a.Active2		= -1
 	a.PivotInd	= -1
 	a.Shuffling = false
-	a.linear		= true
-	a.colorOnly = true
+	a.linear		= linear
+	a.nonLinearMult = nonLinVarianceMult
+	a.colorOnly = colorOnly
 	a.Sorted		= a.linear
 	a.Sorting   = false
-	//a.Data			= a.Generate(a.lineNum, a.lineNum*2)
-	a.Data			= a.GenerateLinear(0, SCREEN_HEIGHT, SCREEN_HEIGHT/float32(a.lineNum))
+
+	if a.linear {
+		a.Data = a.GenerateLinear(0, SCREEN_HEIGHT, SCREEN_HEIGHT/float32(a.lineNum))
+	} else {
+		a.Data = a.Generate(a.lineNum, a.lineNum*a.nonLinearMult)
+	}
 }
 
 func regularQuickSort(arr []float32) []float32 {  // Just a quick sort to sort the array for comparison (if needed)
@@ -79,7 +85,7 @@ func regularQuickSort(arr []float32) []float32 {  // Just a quick sort to sort t
 }
 
 func (a *AnimArr) getLineY(val float32) float32 {   // Lower case incase I want to have this as a package.
-	return SCREEN_HEIGHT-((float32(val)/float32(a.lineNum*2))*SCREEN_HEIGHT)
+	return SCREEN_HEIGHT-((float32(val)/float32(a.lineNum*a.nonLinearMult))*SCREEN_HEIGHT)
 }
 
 func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
@@ -289,7 +295,7 @@ func main() {
 
 	//audioStream = rl.NewAudioStream(44000, 16, 1)
 	anim := AnimArr{}
-	anim.Init(2)  // Input line thickness here
+	anim.Init(2, true, true, 1)  // Input line thickness, if it is linear, and if it is color only here
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling {  // When 'r' is pressed, shuffle the array.
