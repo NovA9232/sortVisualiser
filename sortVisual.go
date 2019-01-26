@@ -36,6 +36,7 @@ type AnimArr struct {
 	PivotInd		 int   // For highlighting pivot when doing quickSort.
 	maxValue		float32
 	Sorted			bool
+	Sorting			bool
 	Shuffling		bool
 	linear			bool
 }
@@ -46,9 +47,10 @@ func (a *AnimArr) Init(lineWidth int) {
 	a.Active		= -1
 	a.Active2		= -1
 	a.PivotInd	= -1
-	a.Sorted		= false
 	a.Shuffling = false
 	a.linear		= true
+	a.Sorted		= a.linear
+	a.Sorting   = false
 	//a.Data			= a.Generate(a.lineNum, a.lineNum*2)
 	a.Data			= a.GenerateLinear(0, SCREEN_HEIGHT, SCREEN_HEIGHT/float32(a.lineNum))
 }
@@ -245,6 +247,7 @@ func (a *AnimArr) BubbleSort() {
 //}
 
 func (a *AnimArr) DoSort(sort string) {
+	a.Sorting = true
 	if sort == "quick" {
 		go func() {
 			a.Sorted = false
@@ -252,14 +255,17 @@ func (a *AnimArr) DoSort(sort string) {
 			fmt.Println("Finished sort.")
 			a.Active = -1
 			a.Sorted = true
+			a.Sorting = false
 		}()
 	} else if sort == "bogo" {
 		go func() {
 			a.BogoSort()
+			a.Sorting = false
 		}()
 	} else if sort == "bubble" {
 		go func() {
 			a.BubbleSort()
+			a.Sorting = false
 		}()
 	}
 }
@@ -285,7 +291,7 @@ func main() {
 			}()
 		}
 
-		if rl.IsKeyPressed(rl.KeyS) {  // When 's' is pressed, sort the array.
+		if rl.IsKeyPressed(rl.KeyS) && !anim.Sorting {  // When 's' is pressed, sort the array.
 			anim.DoSort("quick")
 		}
 
