@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	SCREEN_WIDTH  float32 = 1600
-	SCREEN_HEIGHT float32 = 1000
+	SCREEN_WIDTH  float32 = 800
+	SCREEN_HEIGHT float32 = 800
 
 	//violet rl.Color = NewColor(61, 38, 69, 255)
 	//raspberry rl.Color = NewColor(131, 33, 97, 255)
 	//coral rl.Color = NewColor(218, 65, 103, 255)
 
 	SORT_SLEEP = time.Millisecond
-	SHUFFLE_SLEEP = time.Millisecond
+	SHUFFLE_SLEEP = time.Millisecond/2
 )
 
 type AnimArr struct {
@@ -28,6 +28,7 @@ type AnimArr struct {
 	Active			 int		// Index of current element being operated on.
 	Active2			 int   // Secondary active, for swapping elements.
 	PivotInd		 int   // For highlighting pivot when doing quickSort.
+	maxValue		float32
 	Sorted			bool
 	Shuffling		bool
 	linear			bool
@@ -50,12 +51,12 @@ func (a *AnimArr) Init(lineWidth int) {
 	//a.sortedData = regularQuickSort(a.sortedData)
 }
 
-func regularQuickSort(arr []int) []int {  // Just a quick sort to sort the array for comparison (if needed)
+func regularQuickSort(arr []float32) []float32 {  // Just a quick sort to sort the array for comparison (if needed)
 	if len(arr) < 2 { return arr }
-	var left []int
-	var middle []int
-	var right []int
-	var pivot int = arr[len(arr)/2]
+	var left []float32
+	var middle []float32
+	var right []float32
+	var pivot float32 = arr[len(arr)/2]
 
 	for i := 0; i < len(arr); i++ {
 		if arr[i] < pivot {
@@ -96,12 +97,14 @@ func (a *AnimArr) Draw(dt float32) {
 		} else if a.Sorted {
 			a.drawLine(i, rl.Lime)
 		} else {
-			a.drawLine(i, rl.DarkBlue)
+			normal := uint8((a.Data[i]/a.maxValue)*255)  // Value normalised to 255
+			a.drawLine(i, rl.NewColor(normal, normal, normal, 255))
 		}
 	}
 }
 
 func (a *AnimArr) Generate(num, max int) []float32 {	// Generates array
+	a.maxValue = float32(max)
 	var out []float32
 	for i := 0; i < num; i++ {
 		out = append(out, float32(rand.Intn(max)))
@@ -110,9 +113,10 @@ func (a *AnimArr) Generate(num, max int) []float32 {	// Generates array
 }
 
 func (a *AnimArr) GenerateLinear(start, finish, jump float32) []float32 {
-	fmt.Println("Oof:", start, finish, jump)
+	fmt.Println("Generating linear:", start, finish, jump)
+	a.maxValue = finish
 	var out []float32
-	for i := start; i < finish; i += jump {
+	for i := start; i <= finish; i += jump {
 		out = append(out, i)
 	}
 	return out
@@ -125,7 +129,7 @@ func (a *AnimArr) swapElements(i1, i2 int) {
 func (a *AnimArr) Shuffle(times int, sleep bool) {
 	a.Sorted = false
 	a.Shuffling = true
-	fmt.Println("Shuffling...")
+	//fmt.Println("Shuffling...")
 	var max int = len(a.Data)
 	for i := 0; i < times; i++ {
 		for j := 0; j < len(a.Data); j++ {
@@ -134,9 +138,9 @@ func (a *AnimArr) Shuffle(times int, sleep bool) {
 			a.swapElements(a.Active, a.Active2)
 			if sleep { time.Sleep(SHUFFLE_SLEEP) }
 		}
-		fmt.Println("Done:", i, "lots.")
+		//fmt.Println("Done:", i, "lots.")
 	}
-	fmt.Println("Finished shuffling.")
+	//fmt.Println("Finished shuffling.")
 	a.Shuffling = false
 	a.Active	= -1
 	a.Active2 = -1
@@ -148,6 +152,37 @@ func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bo
 		a.Data[i] = newSlice[i-start]
 		if sleep { time.Sleep(SORT_SLEEP) }
 	}
+}
+
+func (a *AnimArr) cmpArrayWithData(array []float32) bool {  // Returns true if they are the same
+	if len(a.Data) != len(array) {
+		return false
+	}
+
+	for i := 0; i < len(a.Data); i++ {
+		a.Active = i
+		if a.Data[i] != array[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (a *AnimArr) BogoSort() {
+	a.Sorted = false
+	sorted := make([]float32, len(a.Data))
+	copy(sorted, a.Data) // Copy the data into a new array
+	sorted = regularQuickSort(sorted)
+
+	for !a.cmpArrayWithData(sorted) {
+		SHUFFLE_SLEEP = time.Millisecond * 5 // Only changed by this sort, so no point in making it an argument to a.Shuffle
+		a.Shuffle(1, true)
+	}
+	fmt.Println("Finally sorted.")
+	SHUFFLE_SLEEP = time.Millisecond/2
+	a.Sorted = true
+	a.Active = -1
 }
 
 func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of array to sort.
@@ -167,7 +202,7 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 			} else {
 				middle = append(middle, a.Data[i])
 			}
-			time.Sleep(SORT_SLEEP)
+			//time.Sleep(SORT_SLEEP/500) // Bubble sort is quite slow anyway
 		}
 
 		a.PivotInd = -1
@@ -177,16 +212,58 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 	}
 }
 
+func (a *AnimArr) BubbleSort() {
+	a.Sorted = false
+	sorted := false
+
+	for !sorted {
+		sorted = true
+		for i := 0; i < len(a.Data)-1; i++ {
+			a.Active = i
+			a.Active2 = i+1
+			if a.Data[i] > a.Data[i+1] {
+				a.Data[i], a.Data[i+1] = a.Data[i+1], a.Data[i]
+				sorted = false
+			}
+			time.Sleep(SORT_SLEEP)
+		}
+	}
+	a.Sorted = true
+	a.Active = -1
+	a.Active2 = -1
+}
+
+
 //func (a *AnimArr) MergeSort(start, end int) {
 
 //}
 
+func (a *AnimArr) DoSort(sort string) {
+	if sort == "quick" {
+		go func() {
+			a.Sorted = false
+			a.QuickSort(0, len(a.Data))
+			fmt.Println("Finished sort.")
+			a.Active = -1
+			a.Sorted = true
+		}()
+	} else if sort == "bogo" {
+		go func() {
+			a.BogoSort()
+		}()
+	} else if sort == "bubble" {
+		go func() {
+			a.BubbleSort()
+		}()
+	}
+}
+
 func main() {
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Egg")
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(144)
 
 	anim := AnimArr{}
-	anim.Init(1)
+	anim.Init(4)
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyPressed(82) && !anim.Shuffling {  // When 'r' is pressed, shuffle the array.
@@ -196,13 +273,7 @@ func main() {
 		}
 
 		if rl.IsKeyPressed(83) {  // When 's' is pressed, sort the array.
-			go func() {
-				anim.Sorted = false
-				anim.QuickSort(0, len(anim.Data))
-				fmt.Println("Finished sort.")
-				anim.Active = -1
-				anim.Sorted = true
-			}()
+			anim.DoSort("bubble")
 		}
 
 		rl.BeginDrawing()
