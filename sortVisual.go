@@ -15,8 +15,8 @@ var (
 	//violet rl.Color = NewColor(61, 38, 69, 255)
 	//raspberry rl.Color = NewColor(131, 33, 97, 255)
 	//coral rl.Color = NewColor(218, 65, 103, 255)
-	audioStream rl.AudioStream
 
+	// Base speeds (~ in time per comparison/change)
 	QS_SLEEP = time.Millisecond  // Quick sort sleep time
 	CHANGE_SLEEP = time.Millisecond/2  // Time for changeDataBetween to sleep
 	BBL_SLEEP = time.Microsecond // Bubble sort sleep time
@@ -50,6 +50,7 @@ type AnimArr struct {
 func (a *AnimArr) Init(lineWidth int, linear, colorOnly bool, nonLinVarianceMult int) {  // nonLinVarianceMult is a multiplier for how variant the data is if linear is false
 	a.lineWidth = lineWidth
 	a.lineNum = int(math.Floor(float64(SCREEN_WIDTH/float32(a.lineWidth))))
+
 	a.Active		= -1
 	a.Active2		= -1
 	a.PivotInd	= -1
@@ -92,7 +93,7 @@ func (a *AnimArr) getLineY(val float32) float32 {   // Lower case incase I want 
 }
 
 func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
-	var x = float32(i*a.lineWidth)
+	var x = float32((i*a.lineWidth)+(a.lineWidth/2))
 	var y float32
 	if a.colorOnly {
 		y = 0
@@ -104,7 +105,7 @@ func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
 	rl.DrawLineEx(rl.NewVector2(x, SCREEN_HEIGHT), rl.NewVector2(x, y), float32(a.lineWidth), colour)
 }
 
-func (a *AnimArr) Draw(dt float32) {
+func (a *AnimArr) Draw() {
 	var clr rl.Color
 	for i := 0; i < a.lineNum; i++ {
 		if i == a.Active {
@@ -239,7 +240,6 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 }
 
 func (a *AnimArr) BubbleSort() {
-	a.Sorted = false
 	sorted := false
 
 	for !sorted {
@@ -280,17 +280,19 @@ func (a *AnimArr) InsertionSort() {
 
 //}
 
+func (a *AnimArr) DoQuickSort() {
+	a.QuickSort(0, len(a.Data))
+	fmt.Println("Finished sort.")
+	a.Active = -1
+	a.Sorted = true
+	a.Sorting = false
+}
+
 func (a *AnimArr) DoSort(sort string) {
 	a.Sorting = true
+	a.Sorted = false
 	if sort == "quick" {
-		go func() {
-			a.Sorted = false
-			a.QuickSort(0, len(a.Data))
-			fmt.Println("Finished sort.")
-			a.Active = -1
-			a.Sorted = true
-			a.Sorting = false
-		}()
+		go a.DoQuickSort()
 	} else if sort == "bogo" {
 		go func() {
 			a.BogoSort()
@@ -306,7 +308,33 @@ func (a *AnimArr) DoSort(sort string) {
 			a.InsertionSort()
 			a.Sorting = false
 		}()
+	} else {
+		panic("Invalid sort: "+sort)
 	}
+}
+
+
+func (a *AnimArr) Showcase(showcase *bool) {
+	a.Sorting = true
+	a.Sorted = false
+	a.Shuffle(2, true)
+	time.Sleep(time.Millisecond * 500)
+	a.DoQuickSort()
+
+	time.Sleep(time.Millisecond * 500)
+	a.Sorting = true
+	a.Sorted = false
+	a.Shuffle(2, true)
+	time.Sleep(time.Millisecond * 500)
+	a.BubbleSort()
+
+	time.Sleep(time.Millisecond * 500)
+	a.Sorting = true
+	a.Sorted = false
+	a.Shuffle(2, true)
+	time.Sleep(time.Millisecond * 500)
+	a.InsertionSort()
+	*showcase = false
 }
 
 func main() {
@@ -314,25 +342,30 @@ func main() {
 	rl.SetTargetFPS(60)
 
 	anim := AnimArr{}
-	anim.Init(2, true, true, 2)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+	showcase := false
 
+	fmt.Println(len(anim.Data))
 	for !rl.WindowShouldClose() {
-		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling && !anim.Sorting {  // When 'r' is pressed, shuffle the array.
+		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling && !anim.Sorting && !showcase {  // When 'r' is pressed, shuffle the array.
 			go anim.Shuffle(2, true)
-		} else if rl.IsKeyPressed(rl.KeyS) && !anim.Sorting {  // When 's' is pressed, sort the array.
-			anim.DoSort("insertion")
-		} else if rl.IsKeyPressed(rl.KeyP) && !anim.Sorting {
+		} else if rl.IsKeyPressed(rl.KeyS) && !anim.Sorting && !anim.Shuffling && !showcase {  // When 's' is pressed, sort the array.
+			anim.DoSort("quick")
+		} else if rl.IsKeyPressed(rl.KeyL) && !anim.Sorting && !showcase {
 			anim.Data = regularQuickSort(anim.Data)
 			anim.Sorted = true
-		} else if rl.IsKeyPressed(rl.KeyI) {
+		} else if rl.IsKeyPressed(rl.KeyI) && !showcase {
 			go func() {
 				anim.Reverse()
 			}()
+		} else if rl.IsKeyPressed(rl.KeyP) && !showcase && !anim.Sorting && !anim.Shuffling {
+			fmt.Println("Starting showcase.")
+			go anim.Showcase(&showcase)
 		}
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
-		anim.Draw(0)
+		anim.Draw()
 
 		rl.EndDrawing()
 	}
