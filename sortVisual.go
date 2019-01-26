@@ -21,7 +21,7 @@ var (
 )
 
 type AnimArr struct {
-	Data			 []int
+	Data			 []float32
 	sortedData []int
 	lineNum			 int
 	lineWidth		 int
@@ -30,6 +30,7 @@ type AnimArr struct {
 	PivotInd		 int   // For highlighting pivot when doing quickSort.
 	Sorted			bool
 	Shuffling		bool
+	linear			bool
 }
 
 func (a *AnimArr) Init(lineWidth int) {
@@ -40,11 +41,13 @@ func (a *AnimArr) Init(lineWidth int) {
 	a.PivotInd	= -1
 	a.Sorted		= false
 	a.Shuffling = false
-	a.Data			= a.Generate(a.lineNum, a.lineNum*2)
+	a.linear		= true
+	//a.Data			= a.Generate(a.lineNum, a.lineNum*2)
+	a.Data			= a.GenerateLinear(0, SCREEN_HEIGHT, SCREEN_HEIGHT/float32(a.lineNum))
 
-	a.sortedData = make([]int, len(a.Data))
-	copy(a.sortedData, a.Data)
-	a.sortedData = regularQuickSort(a.sortedData)
+	//a.sortedData = make([]int, len(a.Data))
+	//copy(a.sortedData, a.Data)
+	//a.sortedData = regularQuickSort(a.sortedData)
 }
 
 func regularQuickSort(arr []int) []int {  // Just a quick sort to sort the array for comparison (if needed)
@@ -67,13 +70,19 @@ func regularQuickSort(arr []int) []int {  // Just a quick sort to sort the array
 	return append(append(regularQuickSort(left), middle...), regularQuickSort(right)...)
 }
 
-func (a *AnimArr) getLineY(val int) float32 {   // Lower case incase I want to have this as a package.
+func (a *AnimArr) getLineY(val float32) float32 {   // Lower case incase I want to have this as a package.
 	return SCREEN_HEIGHT-((float32(val)/float32(a.lineNum*2))*SCREEN_HEIGHT)
 }
 
 func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
-	x := float32(i*a.lineWidth)
-	rl.DrawLineEx(rl.NewVector2(x, SCREEN_HEIGHT), rl.NewVector2(x, a.getLineY(a.Data[i])), float32(a.lineWidth), colour)
+	var x = float32(i*a.lineWidth)
+	var y float32
+	if a.linear {
+		y = SCREEN_HEIGHT-a.Data[i]
+	} else {
+		y = a.getLineY(a.Data[i])
+	}
+	rl.DrawLineEx(rl.NewVector2(x, SCREEN_HEIGHT), rl.NewVector2(x, y), float32(a.lineWidth), colour)
 }
 
 func (a *AnimArr) Draw(dt float32) {
@@ -92,10 +101,19 @@ func (a *AnimArr) Draw(dt float32) {
 	}
 }
 
-func (a *AnimArr) Generate(num, max int) []int {	// Generates array
-	var out []int
+func (a *AnimArr) Generate(num, max int) []float32 {	// Generates array
+	var out []float32
 	for i := 0; i < num; i++ {
-		out = append(out, rand.Intn(max))
+		out = append(out, float32(rand.Intn(max)))
+	}
+	return out
+}
+
+func (a *AnimArr) GenerateLinear(start, finish, jump float32) []float32 {
+	fmt.Println("Oof:", start, finish, jump)
+	var out []float32
+	for i := start; i < finish; i += jump {
+		out = append(out, i)
 	}
 	return out
 }
@@ -124,7 +142,7 @@ func (a *AnimArr) Shuffle(times int, sleep bool) {
 	a.Active2 = -1
 }
 
-func (a *AnimArr) changeDataBetween(start, end int, newSlice []int, sleep bool) {
+func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bool) {
 	for i := start; i < end; i++ {
 		a.Active = i
 		a.Data[i] = newSlice[i-start]
@@ -134,11 +152,11 @@ func (a *AnimArr) changeDataBetween(start, end int, newSlice []int, sleep bool) 
 
 func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of array to sort.
 	if end-start > 1 {
-		var left []int
-		var middle []int
-		var right []int
+		var left []float32
+		var middle []float32
+		var right []float32
 		a.PivotInd = int(math.Floor(float64(start+end)/2))
-		var pivot int = a.Data[a.PivotInd]
+		var pivot float32 = a.Data[a.PivotInd]
 
 		for i := start; i < end; i++ {
 			a.Active = i
