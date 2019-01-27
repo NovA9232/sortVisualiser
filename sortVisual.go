@@ -13,7 +13,7 @@ var (
 	SCREEN_HEIGHT float32 = 800
 
 	helpW int32 = 533
-	helpH int32 = int32(math.Floor(float64(SCREEN_HEIGHT)/4))
+	helpH int32 = int32(math.Floor(float64(SCREEN_HEIGHT)/3))
 
 	//violet rl.Color = NewColor(61, 38, 69, 255)
 	//raspberry rl.Color = NewColor(131, 33, 97, 255)
@@ -22,7 +22,7 @@ var (
 	// Base speeds (~ in time per comparison/change)
 	QS_SLEEP = time.Millisecond  // Quick sort sleep time
 	CHANGE_SLEEP = time.Millisecond/2  // Time for changeDataBetween to sleep
-	BBL_SLEEP = time.Microsecond // Bubble sort sleep time
+	BBL_SLEEP = time.Microsecond  // Bubble sort sleep time
 	INST_SLEEP = time.Microsecond * 2
 
 	SHUFFLE_SLEEP = time.Microsecond * 500
@@ -48,7 +48,7 @@ type AnimArr struct {
 	Sorting				bool
 	Shuffling			bool
 	linear				bool
-	colorOnly			bool // Do not show height if true
+	ColorOnly			bool // Do not show height if true
 	Showcase			bool  // If showcase is running
 }
 
@@ -63,7 +63,7 @@ func (a *AnimArr) Init(lineWidth int, linear, colorOnly bool, nonLinVarianceMult
 	a.CurrentText = ""
 	a.linear		= linear
 	a.nonLinearMult = nonLinVarianceMult
-	a.colorOnly = colorOnly
+	a.ColorOnly = colorOnly
 	a.Sorted		= a.linear
 	a.Sorting   = false
 
@@ -101,7 +101,7 @@ func (a *AnimArr) getLineY(val float32) float32 {   // Lower case incase I want 
 func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
 	var x = float32((i*a.lineWidth)+(a.lineWidth/2))
 	var y float32
-	if a.colorOnly {
+	if a.ColorOnly {
 		y = 0
 	} else if a.linear {
 		y = SCREEN_HEIGHT-a.Data[i]
@@ -120,7 +120,7 @@ func (a *AnimArr) Draw() {
 			clr = rl.Red
 		} else if i == a.PivotInd {
 			clr = rl.Yellow
-		//} else if a.Sorted && !a.colorOnly {   // Remove this to prevent the view going green when sorted.
+		//} else if a.Sorted && !a.ColorOnly {   // Remove this to prevent the view going green when sorted.
 		//	clr = rl.Lime
 		} else {
 			normal := uint8((a.Data[i]/a.maxValue)*255)  // Value normalised to 255
@@ -128,8 +128,7 @@ func (a *AnimArr) Draw() {
 			//clr = rl.NewColor((normal/2)+127, (normal), (normal/3)+50, 255)  // Fire
 			//clr = rl.NewColor(normal, normal, normal, 255)  // Grayscale
 			//clr = rl.NewColor(normal, (normal/2)+127, normal/3, 255)  // Zesty (green --> yellow)
-			//clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)  // Vapourwave
-			clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)
+			clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)  // Vapourwave/Twilight
 		}
 		a.drawLine(i, clr)
 	}
@@ -150,7 +149,7 @@ func (a *AnimArr) GenerateLinear(start, finish, jump float32) []float32 {
 	fmt.Println("Generating linear:", start, finish, jump)
 	a.maxValue = finish
 	var out []float32
-	for i := start; i <= finish; i += jump {
+	for i := start+jump; i <= finish; i += jump {
 		out = append(out, i)
 	}
 	return out
@@ -166,13 +165,13 @@ func (a *AnimArr) swapElements(i1, i2 int) {
 	a.Data[i1], a.Data[i2] = a.Data[i2], a.Data[i1]
 }
 
-func (a *AnimArr) Shuffle(times int, sleep bool) {
+func (a *AnimArr) Shuffle(times int, sleep bool, bogo bool) {
 	a.Sorted = false
 	a.Shuffling = true
 
 	var max int = len(a.Data)
 	for i := 0; i < times; i++ {
-		a.CurrentText = fmt.Sprintf("Shuffling, round: %d", i+1)
+		if !bogo { a.CurrentText = fmt.Sprintf("Shuffling, round: %d", i+1) }
 		for j := 0; j < len(a.Data); j++ {
 			a.Active	= j
 			a.Active2 = rand.Intn(max)
@@ -183,7 +182,7 @@ func (a *AnimArr) Shuffle(times int, sleep bool) {
 	a.Shuffling = false
 	a.Active	= -1
 	a.Active2 = -1
-	a.CurrentText = ""
+	if !bogo { a.CurrentText = "" }
 }
 
 func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bool) {
@@ -217,7 +216,7 @@ func (a *AnimArr) BogoSort() {
 
 	for !a.cmpArrayWithData(sorted) {
 		SHUFFLE_SLEEP = time.Millisecond * 5 // Only changed by this sort, so no point in making it an argument to a.Shuffle
-		a.Shuffle(1, true)
+		a.Shuffle(1, true, true)
 	}
 	fmt.Println("Finally sorted.")
 	SHUFFLE_SLEEP = time.Millisecond/2
@@ -339,7 +338,7 @@ func (a *AnimArr) RunShowcase() {
 	a.Showcase = true
 	a.Sorting = true
 	a.Sorted = false
-	a.Shuffle(2, true)
+	a.Shuffle(2, true, false)
 	time.Sleep(time.Second)
 	a.CurrentText = "Quick Sort"
 	a.DoQuickSort()
@@ -348,7 +347,7 @@ func (a *AnimArr) RunShowcase() {
 	time.Sleep(time.Second)
 	a.Sorting = true
 	a.Sorted = false
-	a.Shuffle(2, true)
+	a.Shuffle(2, true, false)
 	time.Sleep(time.Second)
 	a.CurrentText = "Bubble Sort"
 	a.BubbleSort()
@@ -358,7 +357,7 @@ func (a *AnimArr) RunShowcase() {
 	time.Sleep(time.Second)
 	a.Sorting = true
 	a.Sorted = false
-	a.Shuffle(2, true)
+	a.Shuffle(2, true, false)
 	time.Sleep(time.Second)
 	a.CurrentText = "Insertion Sort"
 	a.InsertionSort()
@@ -402,12 +401,15 @@ func displayHelp() {
 
 	rl.DrawText("'l'", g1x, 230, fontSize, rl.Black)
 	rl.DrawText("Sort the data instantly.", g2x, 230, fontSize, rl.Black)
+
+	rl.DrawText("'c'", g1x, 260, fontSize, rl.Black)
+	rl.DrawText("Toggle colour only mode.", g2x, 260, fontSize, rl.Black)
 }
 
 
 func main() {
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
-	rl.SetTargetFPS(144)
+	rl.SetTargetFPS(60)
 
 	anim := AnimArr{}
 	anim.Init(2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
@@ -417,7 +419,7 @@ func main() {
 	for !rl.WindowShouldClose() {
 		if !anim.Sorting && !anim.Shuffling && !anim.Showcase {
 			if rl.IsKeyPressed(rl.KeyS) {
-				go anim.Shuffle(2, true)
+				go anim.Shuffle(2, true, false)
 
 			} else if rl.IsKeyPressed(rl.KeyOne) {
 				anim.DoSort("quick")
@@ -437,6 +439,10 @@ func main() {
 			} else if rl.IsKeyPressed(rl.KeyP) {
 				go anim.RunShowcase()
 			}
+		}
+
+		if rl.IsKeyPressed(rl.KeyC) {
+			anim.ColorOnly = !anim.ColorOnly
 		}
 
 		if rl.IsKeyPressed(rl.KeyH) { // Open H
