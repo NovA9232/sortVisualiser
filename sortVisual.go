@@ -20,7 +20,7 @@ var (
 	//coral rl.Color = NewColor(218, 65, 103, 255)
 
 	// Base speeds (~ in time per comparison/change)
-	QS_SLEEP = time.Millisecond  // Quick sort sleep time
+	QS_SLEEP = time.Millisecond // Quick sort sleep time
 	CHANGE_SLEEP = time.Millisecond/2  // Time for changeDataBetween to sleep
 	BBL_SLEEP = time.Microsecond  // Bubble sort sleep time
 	INST_SLEEP = time.Microsecond * 2
@@ -214,13 +214,14 @@ func (a *AnimArr) BogoSort() {
 	sorted := make([]float32, len(a.Data))
 	copy(sorted, a.Data) // Copy the data into a new array
 	sorted = regularQuickSort(sorted)
+	origShflSleep := SHUFFLE_SLEEP
 
 	for !a.cmpArrayWithData(sorted) {
-		SHUFFLE_SLEEP = time.Millisecond * 5 // Only changed by this sort, so no point in making it an argument to a.Shuffle
+		SHUFFLE_SLEEP = time.Millisecond * 10 // Only changed by this sort, so no point in making it an argument to a.Shuffle
 		a.Shuffle(1, true, true)
 	}
 	fmt.Println("Finally sorted.")
-	SHUFFLE_SLEEP = time.Millisecond/2
+	SHUFFLE_SLEEP = origShflSleep
 	a.Sorted = true
 	a.Active = -1
 }
@@ -262,9 +263,9 @@ func (a *AnimArr) BubbleSort() {
 			a.Active2 = i+1
 			if a.Data[i] > a.Data[i+1] {
 				a.swapElements(i, i+1)
+				time.Sleep(BBL_SLEEP)
 				sorted = false
 			}
-			time.Sleep(BBL_SLEEP)
 		}
 	}
 	a.Sorted = true
