@@ -24,6 +24,7 @@ var (
 	CHANGE_SLEEP = time.Millisecond/2  // Time for changeDataBetween to sleep
 	BBL_SLEEP = time.Microsecond  // Bubble sort sleep time
 	INST_SLEEP = time.Microsecond * 2
+	SHL_SLEEP = time.Millisecond
 
 	SHUFFLE_SLEEP = time.Microsecond * 500
 )
@@ -260,7 +261,7 @@ func (a *AnimArr) BubbleSort() {
 			a.Active = i
 			a.Active2 = i+1
 			if a.Data[i] > a.Data[i+1] {
-				a.Data[i], a.Data[i+1] = a.Data[i+1], a.Data[i]
+				a.swapElements(i, i+1)
 				sorted = false
 			}
 			time.Sleep(BBL_SLEEP)
@@ -277,29 +278,50 @@ func (a *AnimArr) InsertionSort() {
 		for j := i; j > 0 && a.Data[j-1] > a.Data[j]; j-- {
 			a.Active = j
 			a.Active2 = j-1
-			a.Data[j], a.Data[j-1] = a.Data[j-1], a.Data[j]
+			a.swapElements(j, j-1)
 			time.Sleep(INST_SLEEP)
 		}
 	}
-	a.Active = -1
-	a.Active2 = -1
-	a.PivotInd = -1
-	a.Sorted = true
+
 }
 
+func (a *AnimArr) generateShellSortGaps() []int {
+	var out = []int{0}
+	for i := int(math.Floor(float64(len(a.Data))/2)); i > 0; i = int(math.Floor(float64(i)/2)) {
+		out = append(out, i)
+	}
+	return out
+}
 
-//func (a *AnimArr) MergeSort(start, end int) {
-
-//}
+func (a *AnimArr) ShellSort() {
+	gapSequence := a.generateShellSortGaps()
+	for _, gap := range gapSequence {
+		for i := gap; i < len(a.Data); i++ {
+			temp := a.Data[i]
+			for a.Active = i; a.Active >= gap && a.Data[a.Active-gap] > temp; a.Active -= gap {
+				a.Active2 = a.Active-gap
+				a.Data[a.Active] = a.Data[a.Active2]
+				time.Sleep(SHL_SLEEP)
+			}
+			a.Data[a.Active] = temp
+		}
+	}
+}
 
 func (a *AnimArr) DoQuickSort() {
 	a.CurrentText = "Quick Sort"
 	a.QuickSort(0, len(a.Data))
 	fmt.Println("Finished sort.")
-	a.Active = -1
-	a.Sorted = true
+	a.resetVals()
+}
+
+func (a *AnimArr) resetVals() {
 	a.Sorting = false
 	a.CurrentText = ""
+	a.Active = -1
+	a.Active2 = -1
+	a.PivotInd = -1
+	a.Sorted = true
 }
 
 func (a *AnimArr) DoSort(sort string) {
@@ -311,59 +333,65 @@ func (a *AnimArr) DoSort(sort string) {
 		a.CurrentText = "Bogo Sort"
 		go func() {
 			a.BogoSort()
-			a.Sorting = false
-			a.CurrentText = ""
+			a.resetVals()
 		}()
 	} else if sort == "bubble" {
 		a.CurrentText = "Bubble Sort"
 		go func() {
 			a.BubbleSort()
-			a.Sorting = false
-			a.CurrentText = ""
+			a.resetVals()
 		}()
 	} else if sort == "insertion" {
 		a.CurrentText = "Insertion Sort"
 		go func() {
 			a.InsertionSort()
-			a.Sorting = false
-			a.CurrentText = ""
+			a.resetVals()
+		}()
+	} else if sort == "shell" {
+		a.CurrentText = "Shell Sort"
+		go func() {
+			a.ShellSort()
+			a.resetVals()
 		}()
 	} else {
 		panic("Invalid sort: "+sort)
 	}
 }
 
+func (a *AnimArr) showcaseRstr() {
+	a.Sorting = true
+	a.Sorted = false
+	a.Shuffle(2, true, false)
+	time.Sleep(time.Second)
+}
 
 func (a *AnimArr) RunShowcase() {
 	a.Showcase = true
-	a.Sorting = true
-	a.Sorted = false
-	a.Shuffle(2, true, false)
-	time.Sleep(time.Second)
+
+	a.showcaseRstr()
 	a.CurrentText = "Quick Sort"
 	a.DoQuickSort()
-	a.CurrentText = ""
+	a.resetVals()
 
 	time.Sleep(time.Second)
-	a.Sorting = true
-	a.Sorted = false
-	a.Shuffle(2, true, false)
-	time.Sleep(time.Second)
+	a.showcaseRstr()
 	a.CurrentText = "Bubble Sort"
 	a.BubbleSort()
-	a.Sorting = false
-	a.CurrentText = ""
+	a.resetVals()
 
 	time.Sleep(time.Second)
-	a.Sorting = true
-	a.Sorted = false
-	a.Shuffle(2, true, false)
-	time.Sleep(time.Second)
+	a.showcaseRstr()
 	a.CurrentText = "Insertion Sort"
 	a.InsertionSort()
-	a.Sorting = false
+	a.resetVals()
+
+	time.Sleep(time.Second)
+	a.showcaseRstr()
+	a.CurrentText = "Shell Sort"
+	a.ShellSort()
+	a.resetVals()
+
 	a.Showcase = false
-	a.CurrentText = ""
 }
 
 
@@ -408,8 +436,9 @@ func displayHelp() {
 
 
 func main() {
+	//rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(144)
 
 	anim := AnimArr{}
 	anim.Init(2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
@@ -427,6 +456,8 @@ func main() {
 				anim.DoSort("bubble")
 			} else if rl.IsKeyPressed(rl.KeyThree) {
 				anim.DoSort("insertion")
+			} else if rl.IsKeyPressed(rl.KeyFour) {
+				anim.DoSort("shell")
 			} else if rl.IsKeyPressed(rl.KeyNine) {
 				anim.DoSort("bogo")
 			} else if rl.IsKeyPressed(rl.KeyL) {
