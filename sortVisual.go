@@ -20,12 +20,12 @@ var (
 	//coral rl.Color = NewColor(218, 65, 103, 255)
 
 	// Base speeds (usually~ in time per comparison/change)
-	QS_SLEEP = time.Millisecond * 2// Quick sort sleep time
+	QS_SLEEP = time.Millisecond  // Quick sort sleep time
 	CHANGE_SLEEP = QS_SLEEP  // Time for changeDataBetween to sleep
-	MS_SLEEP = time.Millisecond * 4  // Merge sort sleep time.
-	BBL_SLEEP = time.Microsecond  // Bubble sort sleep time
+	MS_SLEEP = time.Millisecond * 2  // Merge sort sleep time.
+	BBL_SLEEP = time.Microsecond * 2  // Bubble sort sleep time
 	INST_SLEEP = time.Microsecond * 2
-	SHL_SLEEP = time.Millisecond
+	SHL_SLEEP = time.Millisecond * 2
 
 	SHUFFLE_SLEEP = time.Microsecond * 500
 )
@@ -44,6 +44,8 @@ type AnimArr struct {
 	Active2				int   // Secondary active, for swapping elements.
 	PivotInd			int   // For highlighting pivot when doing quickSort.
 	nonLinearMult int
+	arrayAccesses int
+	comparisons		int
 	maxValue			float32
 	CurrentText   string
 	Sorted				bool
@@ -143,6 +145,16 @@ func (a *AnimArr) Draw() {
 	}
 
 	rl.DrawText(a.CurrentText, 10, 10, 30, rl.LightGray)
+
+	if a.arrayAccesses+a.comparisons > 0 {
+		rl.DrawText(fmt.Sprintf("Total length of array: %d", len(a.Data)), 10, 80, 20, rl.LightGray)
+		if a.arrayAccesses > 0 {
+			rl.DrawText(fmt.Sprintf("Array accesses: %d", a.arrayAccesses), 10, 40, 20, rl.LightGray)
+		}
+		if a.comparisons > 0 {
+			rl.DrawText(fmt.Sprintf("Comparisons: %d", a.comparisons), 10, 60, 20, rl.LightGray)
+		}
+	}
 }
 
 func (a *AnimArr) Generate(num, max int) []float32 {	// Generates array
@@ -172,6 +184,7 @@ func (a *AnimArr) Reverse() {
 
 func (a *AnimArr) swapElements(i1, i2 int) {
 	a.Data[i1], a.Data[i2] = a.Data[i2], a.Data[i1]
+	a.arrayAccesses += 2
 }
 
 func (a *AnimArr) Shuffle(times int, sleep bool, bogo bool) {
@@ -191,6 +204,8 @@ func (a *AnimArr) Shuffle(times int, sleep bool, bogo bool) {
 	a.Shuffling = false
 	a.Active	= -1
 	a.Active2 = -1
+	a.arrayAccesses = 0
+	a.comparisons = 0
 	if !bogo { a.CurrentText = "" }
 }
 
@@ -198,6 +213,7 @@ func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bo
 	for i := start; i < end; i++ {
 		a.Active = i
 		a.Data[i] = newSlice[i-start]
+		a.arrayAccesses++
 		if sleep { time.Sleep(*sleepTime) }  // Sleep for half the time cause this bit should be quick
 	}
 }
@@ -223,9 +239,9 @@ func (a *AnimArr) BogoSort() {
 	copy(sorted, a.Data) // Copy the data into a new array
 	sorted = regularQuickSort(sorted)
 	origShflSleep := SHUFFLE_SLEEP
+	SHUFFLE_SLEEP = time.Millisecond * 10 // Only changed by this sort, so no point in making it an argument to a.Shuffle
 
 	for !a.cmpArrayWithData(sorted) {
-		SHUFFLE_SLEEP = time.Millisecond * 10 // Only changed by this sort, so no point in making it an argument to a.Shuffle
 		a.Shuffle(1, true, true)
 	}
 	fmt.Println("Finally sorted.")
@@ -235,22 +251,30 @@ func (a *AnimArr) BogoSort() {
 }
 
 func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of array to sort.
-	if end-start > 1 {
+	if end-start > 1 {  // Not counting simple comparisons like this, only between elements of a.Data
 		var left []float32
 		var middle []float32
 		var right []float32
 		a.PivotInd = int(math.Floor(float64(start+end)/2))
 		var pivot float32 = a.Data[a.PivotInd]
+		a.arrayAccesses += 1
 
 		for i := start; i < end; i++ {
 			a.Active = i
 			if a.Data[i] < pivot {
+				a.comparisons++
 				left = append(left, a.Data[i])
+				a.arrayAccesses++
 			} else if a.Data[i] > pivot {
+				a.comparisons++
 				right = append(right, a.Data[i])
+				a.arrayAccesses++
 			} else {
+				a.comparisons += 2 // Will have had to compare the other two, but wouldn't have added on.
 				middle = append(middle, a.Data[i])
+				a.arrayAccesses++
 			}
+			a.arrayAccesses++  // 1 in for loop
 		}
 
 		a.PivotInd = -1
@@ -266,18 +290,22 @@ func (a *AnimArr) mergeArrays(start, mid, end int, sleepTime *time.Duration) {
 	right := make([]float32, end-mid)
 	copy(left, a.Data[start:mid])
 	copy(right, a.Data[mid:end])
+	a.arrayAccesses += len(a.Data)
 	var popped float32
 	var count int
 
 	for len(left) > 0 && len(right) > 0 {
 		a.Active = start+len(left)+count
 		if left[0] > right[0] {
+			a.comparisons++
 			popped, right = right[0], right[1:]
 			sorted = append(sorted, popped)
 		} else {
+			a.comparisons++ // Add it anyway
 			popped, left = left[0], left[1:]
 			sorted = append(sorted, popped)
 		}
+		a.arrayAccesses++
 		count++
 	}
 	sorted = append(append(sorted, left...), right...)
@@ -285,7 +313,7 @@ func (a *AnimArr) mergeArrays(start, mid, end int, sleepTime *time.Duration) {
 }
 
 func (a *AnimArr) MergeSort(start, end int) {  // Using a quick sort to merge lists
-	if end-start > 1 {
+	if end-start > 1 { // Not counting this one in a.comparisons
 		var mid int = int(math.Floor(float64(start+end)/2))
 		a.MergeSort(start, mid)  // go through left
 		a.MergeSort(mid, end)
@@ -308,6 +336,8 @@ func (a *AnimArr) BubbleSort() {
 				time.Sleep(BBL_SLEEP)
 				sorted = false
 			}
+			a.comparisons++ // Add in case
+			a.arrayAccesses += 2
 		}
 	}
 	a.Sorted = true
@@ -319,8 +349,10 @@ func (a *AnimArr) InsertionSort() {
 	for i := 1; i < len(a.Data); i++ {
 		a.PivotInd = i
 		for j := i; j > 0 && a.Data[j-1] > a.Data[j]; j-- {
+			a.comparisons++
 			a.Active = j
 			a.Active2 = j-1
+			a.arrayAccesses += 2 // In for loop
 			a.swapElements(j, j-1)
 			time.Sleep(INST_SLEEP)
 		}
@@ -332,6 +364,7 @@ func (a *AnimArr) generateShellSortGaps() []int {
 	for i := int(math.Floor(float64(len(a.Data))/2)); i > 0; i = int(math.Floor(float64(i)/2)) {
 		out = append(out, i)
 	}
+	a.arrayAccesses++ // In for loop
 	return out
 }
 
@@ -341,11 +374,14 @@ func (a *AnimArr) ShellSort() {
 		for i := gap; i < len(a.Data); i++ {
 			temp := a.Data[i]
 			for a.Active = i; a.Active >= gap && a.Data[a.Active-gap] > temp; a.Active -= gap {
+				a.comparisons++  // Remember, not counting comparisons unless they compare an element of a.Data
 				a.Active2 = a.Active-gap
 				a.Data[a.Active] = a.Data[a.Active2]
 				time.Sleep(SHL_SLEEP)
+				a.arrayAccesses += 3 // 2+ One in for loop
 			}
 			a.Data[a.Active] = temp
+			a.arrayAccesses += 2
 		}
 	}
 }
@@ -353,7 +389,6 @@ func (a *AnimArr) ShellSort() {
 
 func (a *AnimArr) resetVals() {
 	a.Sorting = false
-	a.CurrentText = ""
 	a.Active = -1
 	a.Active2 = -1
 	a.PivotInd = -1
@@ -363,6 +398,8 @@ func (a *AnimArr) resetVals() {
 func (a *AnimArr) DoSort(sort string) {
 	a.Sorting = true
 	a.Sorted = false
+	a.arrayAccesses = 0
+	a.comparisons = 0
 	if sort == "quick" {
 		a.CurrentText = "Quick Sort"
 		go func() {
@@ -405,6 +442,8 @@ func (a *AnimArr) DoSort(sort string) {
 }
 
 func (a *AnimArr) showcaseRstr() {
+	a.arrayAccesses = 0
+	a.comparisons = 0
 	a.Sorting = true
 	a.Sorted = false
 	a.Shuffle(2, true, false)
@@ -443,6 +482,8 @@ func (a *AnimArr) RunShowcase() {
 	a.ShellSort()
 	a.resetVals()
 
+	a.arrayAccesses = 0
+	a.comparisons = 0
 	a.Showcase = false
 }
 
@@ -490,18 +531,22 @@ func displayHelp() {
 func main() {
 	rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
-	rl.SetTargetFPS(144)
+	rl.SetTargetFPS(60)
 
 	anim := AnimArr{}
-	anim.Init(100, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
 
 	helpOpen := false
 
 	for !rl.WindowShouldClose() {
 		if !anim.Sorting && !anim.Shuffling && !anim.Showcase {
 			if rl.IsKeyPressed(rl.KeyS) {
-				go anim.Shuffle(2, true, false)
-
+				anim.arrayAccesses = 0
+				anim.comparisons = 0
+				go func() {
+					anim.Shuffle(2, true, false)
+					anim.CurrentText = ""
+				}()
 			} else if rl.IsKeyPressed(rl.KeyOne) {
 				anim.DoSort("quick")
 			} else if rl.IsKeyPressed(rl.KeyTwo) {
