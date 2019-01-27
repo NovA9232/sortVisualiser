@@ -19,9 +19,10 @@ var (
 	//raspberry rl.Color = NewColor(131, 33, 97, 255)
 	//coral rl.Color = NewColor(218, 65, 103, 255)
 
-	// Base speeds (~ in time per comparison/change)
-	QS_SLEEP = time.Millisecond // Quick sort sleep time
-	CHANGE_SLEEP = time.Millisecond/2  // Time for changeDataBetween to sleep
+	// Base speeds (usually~ in time per comparison/change)
+	QS_SLEEP = time.Millisecond * 2// Quick sort sleep time
+	CHANGE_SLEEP = QS_SLEEP  // Time for changeDataBetween to sleep
+	MS_SLEEP = time.Millisecond * 4  // Merge sort sleep time.
 	BBL_SLEEP = time.Microsecond  // Bubble sort sleep time
 	INST_SLEEP = time.Microsecond * 2
 	SHL_SLEEP = time.Millisecond
@@ -186,11 +187,11 @@ func (a *AnimArr) Shuffle(times int, sleep bool, bogo bool) {
 	if !bogo { a.CurrentText = "" }
 }
 
-func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bool) {
+func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bool, sleepTime *time.Duration) {
 	for i := start; i < end; i++ {
 		a.Active = i
 		a.Data[i] = newSlice[i-start]
-		if sleep { time.Sleep(CHANGE_SLEEP) }  // Sleep for half the time cause this bit should be quick
+		if sleep { time.Sleep(*sleepTime) }  // Sleep for half the time cause this bit should be quick
 	}
 }
 
@@ -243,13 +244,47 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 			} else {
 				middle = append(middle, a.Data[i])
 			}
-			time.Sleep(QS_SLEEP)
 		}
 
 		a.PivotInd = -1
-		a.changeDataBetween(start, end, append(append(left, middle...), right...), true)
+		a.changeDataBetween(start, end, append(append(left, middle...), right...), true, &QS_SLEEP)
 		a.QuickSort(start, start+len(left))
 		a.QuickSort(start+len(left)+len(middle), start+len(left)+len(middle)+len(right))
+	}
+}
+
+func (a *AnimArr) mergeArrays(start, mid, end int, sleepTime *time.Duration) {
+	var sorted []float32
+	left := make([]float32, mid-start)
+	right := make([]float32, end-mid)
+	copy(left, a.Data[start:mid])
+	copy(right, a.Data[mid:end])
+	var popped float32
+	var count int
+
+	for len(left) > 0 && len(right) > 0 {
+		a.Active = start+len(left)+count
+		if left[0] > right[0] {
+			popped, right = right[0], right[1:]
+			sorted = append(sorted, popped)
+		} else {
+			popped, left = left[0], left[1:]
+			sorted = append(sorted, popped)
+		}
+		count++
+	}
+	sorted = append(append(sorted, left...), right...)
+	a.changeDataBetween(start, end, sorted, true, &MS_SLEEP)
+}
+
+func (a *AnimArr) MergeSort(start, end int) {  // Using a quick sort to merge lists
+	if end-start > 1 {
+		var mid int = int(math.Floor(float64(start+end)/2))
+		a.MergeSort(start, mid)  // go through left
+		a.MergeSort(mid, end)
+
+		a.mergeArrays(start, mid, end, &MS_SLEEP)
+		time.Sleep(MS_SLEEP)
 	}
 }
 
@@ -283,7 +318,6 @@ func (a *AnimArr) InsertionSort() {
 			time.Sleep(INST_SLEEP)
 		}
 	}
-
 }
 
 func (a *AnimArr) generateShellSortGaps() []int {
@@ -309,12 +343,6 @@ func (a *AnimArr) ShellSort() {
 	}
 }
 
-func (a *AnimArr) DoQuickSort() {
-	a.CurrentText = "Quick Sort"
-	a.QuickSort(0, len(a.Data))
-	fmt.Println("Finished sort.")
-	a.resetVals()
-}
 
 func (a *AnimArr) resetVals() {
 	a.Sorting = false
@@ -329,7 +357,11 @@ func (a *AnimArr) DoSort(sort string) {
 	a.Sorting = true
 	a.Sorted = false
 	if sort == "quick" {
-		go a.DoQuickSort()
+		a.CurrentText = "Quick Sort"
+		go func() {
+			a.QuickSort(0, len(a.Data))
+			a.resetVals()
+		}()
 	} else if sort == "bogo" {
 		a.CurrentText = "Bogo Sort"
 		go func() {
@@ -354,6 +386,12 @@ func (a *AnimArr) DoSort(sort string) {
 			a.ShellSort()
 			a.resetVals()
 		}()
+	} else if sort == "merge" {
+		a.CurrentText = "Merge Sort"
+		go func() {
+			a.MergeSort(0, len(a.Data))
+			a.resetVals()
+		}()
 	} else {
 		panic("Invalid sort: "+sort)
 	}
@@ -371,7 +409,13 @@ func (a *AnimArr) RunShowcase() {
 
 	a.showcaseRstr()
 	a.CurrentText = "Quick Sort"
-	a.DoQuickSort()
+	a.QuickSort(0, len(a.Data))
+	a.resetVals()
+
+	time.Sleep(time.Second)
+	a.showcaseRstr()
+	a.CurrentText = "Merge Sort"
+	a.MergeSort(0, len(a.Data))
 	a.resetVals()
 
 	time.Sleep(time.Second)
@@ -459,6 +503,8 @@ func main() {
 				anim.DoSort("insertion")
 			} else if rl.IsKeyPressed(rl.KeyFour) {
 				anim.DoSort("shell")
+			} else if rl.IsKeyPressed(rl.KeyFive) {
+				anim.DoSort("merge")
 			} else if rl.IsKeyPressed(rl.KeyNine) {
 				anim.DoSort("bogo")
 			} else if rl.IsKeyPressed(rl.KeyL) {
