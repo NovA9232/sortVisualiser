@@ -40,11 +40,13 @@ type AnimArr struct {
 	PivotInd			int   // For highlighting pivot when doing quickSort.
 	nonLinearMult int
 	maxValue			float32
+	CurrentText   string
 	Sorted				bool
 	Sorting				bool
 	Shuffling			bool
 	linear				bool
 	colorOnly			bool // Do not show height if true
+	Showcase			bool  // If showcase is running
 }
 
 func (a *AnimArr) Init(lineWidth int, linear, colorOnly bool, nonLinVarianceMult int) {  // nonLinVarianceMult is a multiplier for how variant the data is if linear is false
@@ -55,6 +57,7 @@ func (a *AnimArr) Init(lineWidth int, linear, colorOnly bool, nonLinVarianceMult
 	a.Active2		= -1
 	a.PivotInd	= -1
 	a.Shuffling = false
+	a.CurrentText = ""
 	a.linear		= linear
 	a.nonLinearMult = nonLinVarianceMult
 	a.colorOnly = colorOnly
@@ -114,14 +117,21 @@ func (a *AnimArr) Draw() {
 			clr = rl.Red
 		} else if i == a.PivotInd {
 			clr = rl.Yellow
-		} else if a.Sorted && !a.colorOnly {
-			clr = rl.Lime
+		//} else if a.Sorted && !a.colorOnly {   // Remove this to prevent the view going green when sorted.
+		//	clr = rl.Lime
 		} else {
 			normal := uint8((a.Data[i]/a.maxValue)*255)  // Value normalised to 255
-			clr = rl.NewColor(normal/3, normal/2, normal, 255)
+			//clr = rl.NewColor((normal/2)+127, (normal), (normal/3)+70, 255)  // Off yellow + coral
+			//clr = rl.NewColor((normal/2)+127, (normal), (normal/3)+50, 255)  // Fire
+			//clr = rl.NewColor(normal, normal, normal, 255)  // Grayscale
+			//clr = rl.NewColor(normal, (normal/2)+127, normal/3, 255)  // Zesty (green --> yellow)
+			//clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)  // Vapourwave
+			clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)
 		}
 		a.drawLine(i, clr)
 	}
+
+	rl.DrawText(a.CurrentText, 10, 10, 30, rl.LightGray)
 }
 
 func (a *AnimArr) Generate(num, max int) []float32 {	// Generates array
@@ -156,21 +166,21 @@ func (a *AnimArr) swapElements(i1, i2 int) {
 func (a *AnimArr) Shuffle(times int, sleep bool) {
 	a.Sorted = false
 	a.Shuffling = true
-	//fmt.Println("Shuffling...")
+
 	var max int = len(a.Data)
 	for i := 0; i < times; i++ {
+		a.CurrentText = fmt.Sprintf("Shuffling, round: %d", i+1)
 		for j := 0; j < len(a.Data); j++ {
 			a.Active	= j
 			a.Active2 = rand.Intn(max)
 			a.swapElements(a.Active, a.Active2)
 			if sleep { time.Sleep(SHUFFLE_SLEEP) }
 		}
-		//fmt.Println("Done:", i, "lots.")
 	}
-	//fmt.Println("Finished shuffling.")
 	a.Shuffling = false
 	a.Active	= -1
 	a.Active2 = -1
+	a.CurrentText = ""
 }
 
 func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bool) {
@@ -281,11 +291,13 @@ func (a *AnimArr) InsertionSort() {
 //}
 
 func (a *AnimArr) DoQuickSort() {
+	a.CurrentText = "Quick Sort"
 	a.QuickSort(0, len(a.Data))
 	fmt.Println("Finished sort.")
 	a.Active = -1
 	a.Sorted = true
 	a.Sorting = false
+	a.CurrentText = ""
 }
 
 func (a *AnimArr) DoSort(sort string) {
@@ -294,19 +306,25 @@ func (a *AnimArr) DoSort(sort string) {
 	if sort == "quick" {
 		go a.DoQuickSort()
 	} else if sort == "bogo" {
+		a.CurrentText = "Bogo Sort"
 		go func() {
 			a.BogoSort()
 			a.Sorting = false
+			a.CurrentText = ""
 		}()
 	} else if sort == "bubble" {
+		a.CurrentText = "Bubble Sort"
 		go func() {
 			a.BubbleSort()
 			a.Sorting = false
+			a.CurrentText = ""
 		}()
 	} else if sort == "insertion" {
+		a.CurrentText = "Insertion Sort"
 		go func() {
 			a.InsertionSort()
 			a.Sorting = false
+			a.CurrentText = ""
 		}()
 	} else {
 		panic("Invalid sort: "+sort)
@@ -314,53 +332,59 @@ func (a *AnimArr) DoSort(sort string) {
 }
 
 
-func (a *AnimArr) Showcase(showcase *bool) {
+func (a *AnimArr) RunShowcase() {
+	a.Showcase = true
 	a.Sorting = true
 	a.Sorted = false
 	a.Shuffle(2, true)
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Second)
+	a.CurrentText = "Quick Sort"
 	a.DoQuickSort()
+	a.CurrentText = ""
 
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Second)
 	a.Sorting = true
 	a.Sorted = false
 	a.Shuffle(2, true)
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Second)
+	a.CurrentText = "Bubble Sort"
 	a.BubbleSort()
+	a.Sorting = false
+	a.CurrentText = ""
 
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Second)
 	a.Sorting = true
 	a.Sorted = false
 	a.Shuffle(2, true)
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Second)
+	a.CurrentText = "Insertion Sort"
 	a.InsertionSort()
-	*showcase = false
+	a.Sorting = false
+	a.Showcase = false
+	a.CurrentText = ""
 }
 
 func main() {
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(144)
 
 	anim := AnimArr{}
 	anim.Init(2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
-	showcase := false
 
-	fmt.Println(len(anim.Data))
 	for !rl.WindowShouldClose() {
-		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling && !anim.Sorting && !showcase {  // When 'r' is pressed, shuffle the array.
+		if rl.IsKeyPressed(rl.KeyR) && !anim.Shuffling && !anim.Sorting && !anim.Showcase {  // When 'r' is pressed, shuffle the array.
 			go anim.Shuffle(2, true)
-		} else if rl.IsKeyPressed(rl.KeyS) && !anim.Sorting && !anim.Shuffling && !showcase {  // When 's' is pressed, sort the array.
+		} else if rl.IsKeyPressed(rl.KeyS) && !anim.Sorting && !anim.Shuffling && !anim.Showcase {  // When 's' is pressed, sort the array.
 			anim.DoSort("quick")
-		} else if rl.IsKeyPressed(rl.KeyL) && !anim.Sorting && !showcase {
+		} else if rl.IsKeyPressed(rl.KeyL) && !anim.Sorting && !anim.Showcase {
 			anim.Data = regularQuickSort(anim.Data)
 			anim.Sorted = true
-		} else if rl.IsKeyPressed(rl.KeyI) && !showcase {
+		} else if rl.IsKeyPressed(rl.KeyI) && !anim.Showcase {
 			go func() {
 				anim.Reverse()
 			}()
-		} else if rl.IsKeyPressed(rl.KeyP) && !showcase && !anim.Sorting && !anim.Shuffling {
-			fmt.Println("Starting showcase.")
-			go anim.Showcase(&showcase)
+		} else if rl.IsKeyPressed(rl.KeyP) && !anim.Showcase && !anim.Sorting && !anim.Shuffling {
+			go anim.RunShowcase()
 		}
 
 		rl.BeginDrawing()
