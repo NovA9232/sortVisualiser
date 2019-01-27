@@ -69,6 +69,13 @@ func (a *AnimArr) Init(lineWidth int, linear, colorOnly bool, nonLinVarianceMult
 	a.Sorted		= a.linear
 	a.Sorting   = false
 
+	QS_SLEEP = QS_SLEEP * time.Duration(a.lineWidth)
+	CHANGE_SLEEP = QS_SLEEP
+	MS_SLEEP = MS_SLEEP * time.Duration(a.lineWidth)
+	BBL_SLEEP = BBL_SLEEP * time.Duration(a.lineWidth)
+	INST_SLEEP = INST_SLEEP * time.Duration(a.lineWidth)
+	SHL_SLEEP = SHL_SLEEP * time.Duration(a.lineWidth)
+
 	if a.linear {
 		a.Data = a.GenerateLinear(0, SCREEN_HEIGHT, SCREEN_HEIGHT/float32(a.lineNum))
 	} else {
@@ -481,12 +488,12 @@ func displayHelp() {
 
 
 func main() {
-	//rl.SetConfigFlags(rl.FlagVsyncHint)
+	rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
 	rl.SetTargetFPS(144)
 
 	anim := AnimArr{}
-	anim.Init(2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(100, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
 
 	helpOpen := false
 
