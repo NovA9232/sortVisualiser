@@ -108,7 +108,9 @@ func (a *AnimArr) Draw() {
 			//clr = rl.NewColor((normal/2)+127, (normal), (normal/3)+50, 255)  // Fire
 			//clr = rl.NewColor(normal, normal, normal, 255)  // Grayscale
 			//clr = rl.NewColor(normal, (normal/2)+127, normal/3, 255)  // Zesty (green --> yellow)
-			clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)  // Vapourwave/Twilight
+			//clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)  // Twilight/Vapourwave
+      //clr = rl.NewColor(128-(normal/2), 191-(normal/4), normal, 255)  // Sea
+      clr = rl.NewColor(((normal)/3)+85, 128-(normal/2), 170-(normal/3), 255)  // Soft Vapourwave
 		}
 		a.drawLine(i, clr)
 	}

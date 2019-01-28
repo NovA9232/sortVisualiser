@@ -26,7 +26,7 @@ func main() {
 	rl.SetTargetFPS(60)
 
 	anim := animatedArr.AnimArr{}
-	anim.Init(SCREEN_WIDTH, SCREEN_HEIGHT, 4, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(SCREEN_WIDTH, SCREEN_HEIGHT, 2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
 
 	helpOpen := false
 
