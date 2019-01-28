@@ -26,7 +26,7 @@ func main() {
 	rl.SetTargetFPS(60)
 
 	anim := animatedArr.AnimArr{}
-	anim.Init(SCREEN_WIDTH, SCREEN_HEIGHT, 2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(SCREEN_WIDTH, SCREEN_HEIGHT, 4, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
 
 	helpOpen := false
 
@@ -49,6 +49,8 @@ func main() {
 				anim.DoSort("shell")
 			} else if rl.IsKeyPressed(rl.KeyFive) {
 				anim.DoSort("merge")
+			} else if rl.IsKeyPressed(rl.KeySix) {
+				anim.DoSort("shaker")
 			} else if rl.IsKeyPressed(rl.KeyNine) {
 				anim.DoSort("bogo")
 			} else if rl.IsKeyPressed(rl.KeyL) {

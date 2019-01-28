@@ -33,6 +33,12 @@ func (a *AnimArr) RunShowcase() {
 	a.BubbleSort()
 	a.resetVals()
 
+  time.Sleep(time.Second)
+  a.showcaseRstr()
+  a.CurrentText = "Cocktail Shaker Sort"
+  a.CocktailShakerSort()
+  a.resetVals()
+
 	time.Sleep(time.Second)
 	a.showcaseRstr()
 	a.CurrentText = "Insertion Sort"

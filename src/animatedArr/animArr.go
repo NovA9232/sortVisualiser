@@ -15,6 +15,7 @@ var (
   BBL_SLEEP = time.Microsecond * 2  // Bubble sort sleep time
   INST_SLEEP = time.Microsecond * 2
   SHL_SLEEP = time.Millisecond * 2
+  CCT_SLEEP = time.Microsecond * 60
 
   SHUFFLE_SLEEP = time.Microsecond * 500
 )
@@ -61,8 +62,9 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
 	QS_SLEEP = QS_SLEEP * time.Duration(a.lineWidth)
 	CHANGE_SLEEP = QS_SLEEP
 	MS_SLEEP = MS_SLEEP * time.Duration(a.lineWidth)
-	BBL_SLEEP = BBL_SLEEP * time.Duration(a.lineWidth)
-	INST_SLEEP = INST_SLEEP * time.Duration(a.lineWidth)
+	BBL_SLEEP = BBL_SLEEP * time.Duration(math.Pow(float64(a.lineWidth), 2))  // Squared because big O is O(n^2). n is inv proportional to array items.
+	INST_SLEEP = INST_SLEEP * time.Duration(math.Pow(float64(a.lineWidth), 2))
+  CCT_SLEEP = CCT_SLEEP * time.Duration(math.Pow(float64(a.lineWidth), 2))
 	SHL_SLEEP = SHL_SLEEP * time.Duration(a.lineWidth)
 
 	if a.linear {
@@ -173,6 +175,12 @@ func (a *AnimArr) DoSort(sort string) {
 			a.MergeSort(0, len(a.Data))
 			a.resetVals()
 		}()
+  } else if sort == "shaker" {
+    a.CurrentText = "Cocktail Shaker Sort"
+    go func() {
+      a.CocktailShakerSort()
+      a.resetVals()
+    }()
 	} else {
 		panic("Invalid sort: "+sort)
 	}

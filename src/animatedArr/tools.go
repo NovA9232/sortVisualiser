@@ -73,7 +73,6 @@ func (a *AnimArr) Generate(num, max int) []float32 {	// Generates array
 }
 
 func (a *AnimArr) GenerateLinear(start, finish, jump float32) []float32 {
-	fmt.Println("Generating linear:", start, finish, jump)
 	a.maxValue = finish
 	var out []float32
 	for i := start+jump; i <= finish; i += jump {

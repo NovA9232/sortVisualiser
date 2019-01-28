@@ -18,14 +18,13 @@ func (a *AnimArr) mergeArrays(start, mid, end int, sleepTime *time.Duration) {
 	for len(left) > 0 && len(right) > 0 {
 		a.Active = start+len(left)+count
 		if left[0] > right[0] {
-			a.Comparisons++
 			popped, right = right[0], right[1:]
 			sorted = append(sorted, popped)
 		} else {
-			a.Comparisons++ // Add it anyway
 			popped, left = left[0], left[1:]
 			sorted = append(sorted, popped)
 		}
+		a.Comparisons++  // Will have had to compare it once regardless
 		a.ArrayAccesses++
 		count++
 	}

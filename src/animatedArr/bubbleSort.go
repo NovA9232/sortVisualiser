@@ -4,21 +4,24 @@ import (
 	"time"
 )
 
-func (a *AnimArr) BubbleSort() {
-	sorted := false
+func (a *AnimArr) mainBubble(i int, swapped *bool, sleepTime *time.Duration) {  // Used by cocktail shake as well, so keep it separate.
+  a.Active = i
+  a.Active2 = i+1
+  if a.Data[i] > a.Data[i+1] {
+    a.swapElements(i, i+1)
+    *swapped = true
+    time.Sleep(*sleepTime)
+  }
+  a.Comparisons++ // Add in case
+  a.ArrayAccesses += 2
+}
 
-	for !sorted {
-		sorted = true
+func (a *AnimArr) BubbleSort() {
+	swapped := true
+	for swapped {
+		swapped = false
 		for i := 0; i < len(a.Data)-1; i++ {
-			a.Active = i
-			a.Active2 = i+1
-			if a.Data[i] > a.Data[i+1] {
-				a.swapElements(i, i+1)
-				time.Sleep(BBL_SLEEP)
-				sorted = false
-			}
-			a.Comparisons++ // Add in case
-			a.ArrayAccesses += 2
+			a.mainBubble(i, &swapped, &BBL_SLEEP)
 		}
 	}
 	a.Sorted = true
