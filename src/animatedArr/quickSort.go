@@ -25,7 +25,7 @@ func RegularQuickSort(arr []float32) []float32 {  // Just a quick sort to sort t
 }
 
 func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of array to sort.
-	if end-start > 1 {  // Not counting simple Comparisons like this, only between elements of a.Data
+	if !a.Sorted && end-start > 1 {  // Not counting simple Comparisons like this, only between elements of a.Data
 		var left []float32
 		var middle []float32
 		var right []float32
@@ -33,7 +33,7 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 		var pivot float32 = a.Data[a.PivotInd]
 		a.ArrayAccesses += 1
 
-		for i := start; i < end; i++ {
+		for i := start; !a.Sorted && i < end; i++ {
 			a.Active = i
 			if a.Data[i] < pivot {
 				a.Comparisons++

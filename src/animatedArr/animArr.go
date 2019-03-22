@@ -9,13 +9,13 @@ import (
 
 var (
   // Base speeds (usually~ in time per comparison/change)
-  QS_SLEEP = time.Millisecond  // Quick sort sleep time
-  CHANGE_SLEEP = QS_SLEEP  // Time for changeDataBetween to sleep
-  MS_SLEEP = time.Millisecond * 2  // Merge sort sleep time.
-  BBL_SLEEP = time.Microsecond * 2  // Bubble sort sleep time
-  INST_SLEEP = time.Microsecond * 2
-  SHL_SLEEP = time.Millisecond * 2
-  CCT_SLEEP = time.Microsecond * 60
+  QS_SLEEP time.Duration
+  CHANGE_SLEEP time.Duration
+  MS_SLEEP time.Duration
+  BBL_SLEEP time.Duration
+  INST_SLEEP time.Duration
+  SHL_SLEEP time.Duration
+  CCT_SLEEP time.Duration
 
   SHUFFLE_SLEEP = time.Microsecond * 500
 )
@@ -59,13 +59,14 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
 	a.Sorted		= a.linear
 	a.Sorting   = false
 
-	QS_SLEEP = QS_SLEEP * time.Duration(a.lineWidth)
-	CHANGE_SLEEP = QS_SLEEP
-	MS_SLEEP = MS_SLEEP * time.Duration(a.lineWidth)
-	BBL_SLEEP = BBL_SLEEP * time.Duration(math.Pow(float64(a.lineWidth), 2))  // Squared because big O is O(n^2). n is inv proportional to array items.
-	INST_SLEEP = INST_SLEEP * time.Duration(math.Pow(float64(a.lineWidth), 2))
-  CCT_SLEEP = CCT_SLEEP * time.Duration(math.Pow(float64(a.lineWidth), 2))
-	SHL_SLEEP = SHL_SLEEP * time.Duration(a.lineWidth)
+
+  QS_SLEEP = time.Millisecond * time.Duration(a.lineWidth)
+  CHANGE_SLEEP = QS_SLEEP
+  MS_SLEEP = time.Millisecond * 2 * time.Duration(a.lineWidth)
+  BBL_SLEEP = time.Microsecond * 2 * time.Duration(math.Pow(float64(a.lineWidth), 2))  // Squared because big O is O(n^2). n is inv proportional to array items.
+  INST_SLEEP = time.Microsecond * 2 * time.Duration(math.Pow(float64(a.lineWidth), 2))
+  SHL_SLEEP = time.Millisecond * 2 * time.Duration(math.Pow(float64(a.lineWidth), 2))
+  CCT_SLEEP = time.Microsecond * 60 * time.Duration(a.lineWidth)
 
 	if a.linear {
 		a.Data = a.GenerateLinear(0, a.H, a.H/float32(a.lineNum))
@@ -91,13 +92,9 @@ func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
 	rl.DrawLineEx(rl.NewVector2(x, a.H), rl.NewVector2(x, y), float32(a.lineWidth), colour)
 }
 
-func (a *AnimArr) Update() {
-  
-}
-
 func (a *AnimArr) Draw() {
 	var clr rl.Color
-	for i := 0; i < a.lineNum; i++ {
+	for i := 0; i < len(a.Data); i++ {
 		if i == a.Active {
 			clr = rl.Green
 		} else if i == a.Active2 {
@@ -128,6 +125,51 @@ func (a *AnimArr) Draw() {
 		}
 		if a.Comparisons > 0 {
 			rl.DrawText(fmt.Sprintf("Comparisons: %d", a.Comparisons), 10, 60, 20, rl.LightGray)
+		}
+	}
+}
+
+func (a *AnimArr) Update() {
+	if rl.IsKeyPressed(rl.KeyC) {
+		a.ColorOnly = !a.ColorOnly
+	}
+
+	if rl.IsKeyPressed(rl.KeyQ) {
+		a.Sorted = true
+		println("hmm")
+	}
+
+	if !a.Sorting && !a.Shuffling && !a.Showcase {
+		if rl.IsKeyPressed(rl.KeyS) {
+			a.ArrayAccesses = 0
+			a.Comparisons = 0
+			go func() {
+				a.Shuffle(2, true, false)
+				a.CurrentText = ""
+			}()
+		} else if rl.IsKeyPressed(rl.KeyOne) {
+			a.DoSort("quick")
+		} else if rl.IsKeyPressed(rl.KeyTwo) {
+			a.DoSort("bubble")
+		} else if rl.IsKeyPressed(rl.KeyThree) {
+			a.DoSort("insertion")
+		} else if rl.IsKeyPressed(rl.KeyFour) {
+			a.DoSort("shell")
+		} else if rl.IsKeyPressed(rl.KeyFive) {
+			a.DoSort("merge")
+		} else if rl.IsKeyPressed(rl.KeySix) {
+			a.DoSort("shaker")
+		} else if rl.IsKeyPressed(rl.KeyNine) {
+			a.DoSort("bogo")
+		} else if rl.IsKeyPressed(rl.KeyL) {
+			a.Data = RegularQuickSort(a.Data)
+			a.Sorted = true
+		} else if rl.IsKeyPressed(rl.KeyR) {
+			go func() {
+				a.Reverse(a.Data)
+			}()
+		} else if rl.IsKeyPressed(rl.KeyP) {
+			go a.RunShowcase()
 		}
 	}
 }

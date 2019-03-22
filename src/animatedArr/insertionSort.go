@@ -5,7 +5,7 @@ import (
 )
 
 func (a *AnimArr) InsertionSort() {
-	for i := 1; i < len(a.Data); i++ {
+	for i := 1; !a.Sorted && i < len(a.Data); i++ {
 		a.PivotInd = i
 		for j := i; j > 0 && a.Data[j-1] > a.Data[j]; j-- {
 			a.Comparisons++

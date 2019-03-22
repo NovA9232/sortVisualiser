@@ -11,7 +11,7 @@ func (a *AnimArr) Shuffle(times int, sleep bool, bogo bool) {
 	a.Shuffling = true
 
 	var max int = len(a.Data)
-	for i := 0; i < times; i++ {
+	for i := 0; !a.Sorted && i < times; i++ {
 		if !bogo { a.CurrentText = fmt.Sprintf("Shuffling, round: %d", i+1) }
 		for j := 0; j < len(a.Data); j++ {
 			a.Active	= j

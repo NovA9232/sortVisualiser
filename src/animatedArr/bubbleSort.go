@@ -18,7 +18,7 @@ func (a *AnimArr) mainBubble(i int, swapped *bool, sleepTime *time.Duration) {  
 
 func (a *AnimArr) BubbleSort() {
 	swapped := true
-	for swapped {
+	for swapped && !a.Sorted {
 		swapped = false
 		for i := 0; i < len(a.Data)-1; i++ {
 			a.mainBubble(i, &swapped, &BBL_SLEEP)

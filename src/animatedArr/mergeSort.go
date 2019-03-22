@@ -15,7 +15,7 @@ func (a *AnimArr) mergeArrays(start, mid, end int, sleepTime *time.Duration) {
 	var popped float32
 	var count int
 
-	for len(left) > 0 && len(right) > 0 {
+	for !a.Sorted && len(left) > 0 && len(right) > 0 {
 		a.Active = start+len(left)+count
 		if left[0] > right[0] {
 			popped, right = right[0], right[1:]
@@ -33,7 +33,7 @@ func (a *AnimArr) mergeArrays(start, mid, end int, sleepTime *time.Duration) {
 }
 
 func (a *AnimArr) MergeSort(start, end int) {  // Using a quick sort to merge lists
-	if end-start > 1 { // Not counting this one in a.Comparisons
+	if !a.Sorted && end-start > 1 { // Not counting this one in a.Comparisons
 		var mid int = int(math.Floor(float64(start+end)/2))
 		a.MergeSort(start, mid)  // go through left
 		a.MergeSort(mid, end)

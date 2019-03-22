@@ -8,66 +8,57 @@ import (
 	"helpMenu"
 )
 
-var (
-	SCREEN_WIDTH  float32 = 1600
-	SCREEN_HEIGHT float32 = 800
-
+const (
 	helpW int32 = 533
-	helpH int32 = int32(math.Floor(float64(SCREEN_HEIGHT)/3))
+	WIN_SIZE_CHECK_DELAY = 0.1
+	DEFAULT_LINE_WIDTH = 4
+)
+
+var (
+	screenWidth  int = 1600
+	screenHeight int = 800
+	helpH int32 = int32(math.Floor(float64(screenHeight)/3))
 
 	//violet rl.Color = NewColor(61, 38, 69, 255)
 	//raspberry rl.Color = NewColor(131, 33, 97, 255)
 	//coral rl.Color = NewColor(218, 65, 103, 255)
 )
 
+const (
+  maxSamples = 22050
+)
+
+func checkScreenSizeChange(a *animatedArr.AnimArr) {
+	w, h := rl.GetScreenWidth(), rl.GetScreenHeight()
+	if w != screenWidth || h != screenHeight {
+		screenWidth = w
+		screenHeight = h
+		println("Window changed size")
+		a.Init(float32(screenWidth), float32(screenHeight), DEFAULT_LINE_WIDTH, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+	}
+}
+
 func main() {
 	rl.SetConfigFlags(rl.FlagVsyncHint)
-	rl.InitWindow(int32(SCREEN_WIDTH), int32(SCREEN_HEIGHT), "Sort Visualiser")
+	rl.SetConfigFlags(rl.FlagWindowResizable)
+	rl.InitWindow(int32(screenWidth), int32(screenHeight), "Sort Visualiser")
 	rl.SetTargetFPS(60)
 
-	anim := animatedArr.AnimArr{}
-	anim.Init(SCREEN_WIDTH, SCREEN_HEIGHT, 2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+	anim := &animatedArr.AnimArr{}
+	anim.Init(float32(screenWidth), float32(screenHeight), 2, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+
+	var checkTimer float32 = 0
 
 	helpOpen := false
 
 	for !rl.WindowShouldClose() {
-		if !anim.Sorting && !anim.Shuffling && !anim.Showcase {
-			if rl.IsKeyPressed(rl.KeyS) {
-				anim.ArrayAccesses = 0
-				anim.Comparisons = 0
-				go func() {
-					anim.Shuffle(2, true, false)
-					anim.CurrentText = ""
-				}()
-			} else if rl.IsKeyPressed(rl.KeyOne) {
-				anim.DoSort("quick")
-			} else if rl.IsKeyPressed(rl.KeyTwo) {
-				anim.DoSort("bubble")
-			} else if rl.IsKeyPressed(rl.KeyThree) {
-				anim.DoSort("insertion")
-			} else if rl.IsKeyPressed(rl.KeyFour) {
-				anim.DoSort("shell")
-			} else if rl.IsKeyPressed(rl.KeyFive) {
-				anim.DoSort("merge")
-			} else if rl.IsKeyPressed(rl.KeySix) {
-				anim.DoSort("shaker")
-			} else if rl.IsKeyPressed(rl.KeyNine) {
-				anim.DoSort("bogo")
-			} else if rl.IsKeyPressed(rl.KeyL) {
-				anim.Data = animatedArr.RegularQuickSort(anim.Data)
-				anim.Sorted = true
-			} else if rl.IsKeyPressed(rl.KeyR) {
-				go func() {
-					anim.Reverse(anim.Data)
-				}()
-			} else if rl.IsKeyPressed(rl.KeyP) {
-				go anim.RunShowcase()
-			}
+		checkTimer += rl.GetFrameTime()
+		if checkTimer >= WIN_SIZE_CHECK_DELAY {
+			checkScreenSizeChange(anim)
+			checkTimer = 0
 		}
 
-		if rl.IsKeyPressed(rl.KeyC) {
-			anim.ColorOnly = !anim.ColorOnly
-		}
+		anim.Update()
 
 		if rl.IsKeyPressed(rl.KeyH) { // Open H
 			helpOpen = !helpOpen

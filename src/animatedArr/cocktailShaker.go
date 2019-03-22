@@ -2,7 +2,7 @@ package animatedArr
 
 func (a *AnimArr) CocktailShakerSort() {
   swapped := true
-  for swapped {
+  for !a.Sorted && swapped {
     swapped = false
     for i := 0; i < len(a.Data)-1; i++ {
       a.mainBubble(i, &swapped, &CCT_SLEEP) // pass reference to swap rather than returning it (easier).

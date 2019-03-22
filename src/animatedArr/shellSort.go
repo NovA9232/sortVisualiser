@@ -17,7 +17,7 @@ func (a *AnimArr) generateShellSortGaps() []int {
 func (a *AnimArr) ShellSort() {
 	gapSequence := a.generateShellSortGaps()
 	for _, gap := range gapSequence {
-		for i := gap; i < len(a.Data); i++ {
+		for i := gap; a.Sorted && i < len(a.Data); i++ {
 			temp := a.Data[i]
 			for a.Active = i; a.Active >= gap && a.Data[a.Active-gap] > temp; a.Active -= gap {
 				a.Comparisons++  // Remember, not counting Comparisons unless they compare an element of a.Data
