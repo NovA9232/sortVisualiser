@@ -38,7 +38,7 @@ type AnimArr struct {
 	Sorted				bool
 	Sorting				bool
 	Shuffling			bool
-	linear				bool
+	Linear				bool
 	ColorOnly			bool // Do not show height if true
 	Showcase			bool  // If showcase is running
 }
@@ -53,10 +53,10 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
 	a.PivotInd	= -1
 	a.Shuffling = false
 	a.CurrentText = ""
-	a.linear		= linear
+	a.Linear		= linear
 	a.nonLinearMult = nonLinVarianceMult
 	a.ColorOnly = colorOnly
-	a.Sorted		= a.linear
+	a.Sorted		= a.Linear
 	a.Sorting   = false
 
 	oNlogN := time.Duration(float64(a.lineNum) * math.Log(float64(a.lineNum)))
@@ -70,14 +70,14 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
   SHL_SLEEP = time.Second * 2 * 10 / time.Duration(math.Pow(float64(a.lineNum), 1.5))   // O(n^(3/2)) 
   CCT_SLEEP = time.Second * 2 * 10 / oNSqrd  // O(n^2)
 
-	if a.linear {
+	if a.Linear {
 		a.Data = a.GenerateLinear(0, a.H, a.H/float32(a.lineNum))
 	} else {
 		a.Data = a.Generate(a.lineNum, a.lineNum*a.nonLinearMult)
 	}
 }
 
-func (a *AnimArr) getLineY(val float32) float32 {   // Lower case incase I want to have this as a package.
+func (a *AnimArr) getLineY(val float32) float32 {   // Lower case so not exported
 	return a.H-((float32(val)/float32(a.lineNum*a.nonLinearMult))*a.H)
 }
 
@@ -86,7 +86,7 @@ func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
 	var y float32
 	if a.ColorOnly {
 		y = 0
-	} else if a.linear {
+	} else if a.Linear {
 		y = a.H-a.Data[i]
 	} else {
 		y = a.getLineY(a.Data[i])
@@ -104,7 +104,7 @@ func (a *AnimArr) Draw() {
 		} else if i == a.PivotInd {
 			clr = rl.Yellow
 		//} else if a.Sorted && !a.ColorOnly {   // Remove this to prevent the view going green when sorted.
-		//	clr = rl.Lime
+			//clr = rl.Lime
 		} else {
 			normal := uint8((a.Data[i]/a.maxValue)*255)  // Value normalised to 255
 			//clr = rl.NewColor((normal/2)+127, (normal), (normal/3)+70, 255)  // Off yellow + coral

@@ -6,8 +6,8 @@ import (
 )
 
 func (a *AnimArr) generateShellSortGaps() []int {   // Generate A083318 gaps  O(n^(3/2))
-	var out = []int{1}
-	for i, k := 0, 1; k <= int(math.Floor(float64(len(a.Data))/2)); i, k = i + 1, int(math.Ceil(math.Pow(2, float64(i)) + 1)) {
+	var out = []int{1}  // Init with 1
+	for i, k := 0, 1; k < len(a.Data); i, k = i + 1, int(math.Ceil(math.Pow(2, float64(i)) + 1)) {
 		println(k, "k")
 		out = append(out, k)
 	}

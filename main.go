@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"github.com/gen2brain/raylib-go/raylib"
 
 	"animatedArr"
@@ -9,16 +8,14 @@ import (
 )
 
 const (
-	helpW int32 = 533
 	WIN_SIZE_CHECK_DELAY = 0.1
-	DEFAULT_LINE_WIDTH = 4
+	DEFAULT_LINE_WIDTH = 2
 	LINE_WIDTH_INCREMENT = 2
 )
 
 var (
 	screenWidth  int = 1600
 	screenHeight int = 800
-	helpH int32 = int32(math.Floor(float64(screenHeight)/3))
 
 	currLineWidth int = DEFAULT_LINE_WIDTH
 
@@ -27,17 +24,13 @@ var (
 	//coral rl.Color = NewColor(218, 65, 103, 255)
 )
 
-const (
-  maxSamples = 22050
-)
-
 func checkScreenSizeChange(a *animatedArr.AnimArr) {
 	w, h := rl.GetScreenWidth(), rl.GetScreenHeight()
 	if w != screenWidth || h != screenHeight {
 		screenWidth = w
 		screenHeight = h
 		println("Window changed size")
-		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, true, false, 2)
+		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, a.Linear, a.ColorOnly, 2)
 	}
 }
 
@@ -45,7 +38,7 @@ func changeLineWidth(a *animatedArr.AnimArr, amount int) {
 	newWidth := currLineWidth + amount
 	if newWidth > 0 && newWidth < screenWidth {
 		currLineWidth = newWidth
-		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, true, false, 2)
+		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, a.Linear, a.ColorOnly, 2)
 	}
 }
 
@@ -60,7 +53,8 @@ func main() {
 
 	var checkTimer float32 = 0
 
-	helpOpen := false
+	helpM := helpMenu.NewHelpMenu()
+	sortKeybindM := helpMenu.NewSortsKeyBindMenu()
 
 	for !rl.WindowShouldClose() {
 		if !anim.Sorting && !anim.Shuffling && !anim.Showcase {
@@ -80,15 +74,29 @@ func main() {
 		anim.Update()
 
 		if rl.IsKeyPressed(rl.KeyH) { // Open H
-			helpOpen = !helpOpen
+			helpM.Open = !helpM.Open
+			if sortKeybindM.Open {
+				sortKeybindM.Open = false
+			}
+		}
+
+		if rl.IsKeyPressed(rl.KeyK) { // Open sort binds help menu
+			sortKeybindM.Open = !sortKeybindM.Open
+			if helpM.Open {
+				helpM.Open = false
+			}
 		}
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 		anim.Draw()
 
-		if helpOpen {
-			helpMenu.DisplayHelp(helpW, helpH)
+		if helpM.Open {
+			helpM.Draw()
+		}
+
+		if sortKeybindM.Open {
+			sortKeybindM.Draw()
 		}
 
 		rl.EndDrawing()
