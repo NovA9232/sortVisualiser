@@ -59,14 +59,16 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
 	a.Sorted		= a.linear
 	a.Sorting   = false
 
+	oNlogN := time.Duration(float64(a.lineNum) * math.Log(float64(a.lineNum)))
+	oNSqrd := time.Duration(math.Pow(float64(a.lineNum), 2))
 
-  QS_SLEEP = time.Millisecond * time.Duration(a.lineWidth)
+  QS_SLEEP = time.Second * 8 / oNlogN          // O(n log n)
   CHANGE_SLEEP = QS_SLEEP
-  MS_SLEEP = time.Millisecond * 2 * time.Duration(a.lineWidth)
-  BBL_SLEEP = time.Microsecond * 2 * time.Duration(math.Pow(float64(a.lineWidth), 2))  // Squared because big O is O(n^2). n is inv proportional to array items.
-  INST_SLEEP = time.Microsecond * 2 * time.Duration(math.Pow(float64(a.lineWidth), 2))
-  SHL_SLEEP = time.Millisecond * 2 * time.Duration(math.Pow(float64(a.lineWidth), 2))
-  CCT_SLEEP = time.Microsecond * 60 * time.Duration(a.lineWidth)
+  MS_SLEEP = time.Second * 2 * 10 / oNlogN  // O(n log n)
+  BBL_SLEEP = time.Second * 2 * 6 / oNSqrd   // O(n^2)
+  INST_SLEEP = time.Second * 2 * 6 / oNSqrd	 // O(n^2)
+  SHL_SLEEP = time.Second * 2 * 10 / time.Duration(math.Pow(float64(a.lineNum), 1.5))   // O(n^(3/2)) 
+  CCT_SLEEP = time.Second * 2 * 10 / oNSqrd  // O(n^2)
 
 	if a.linear {
 		a.Data = a.GenerateLinear(0, a.H, a.H/float32(a.lineNum))
@@ -136,7 +138,7 @@ func (a *AnimArr) Update() {
 
 	if rl.IsKeyPressed(rl.KeyQ) {
 		a.Sorted = true
-		println("hmm")
+		println("Stopping...")
 	}
 
 	if !a.Sorting && !a.Shuffling && !a.Showcase {

@@ -5,19 +5,20 @@ import (
 	"time"
 )
 
-func (a *AnimArr) generateShellSortGaps() []int {
-	var out = []int{0}
-	for i := int(math.Floor(float64(len(a.Data))/2)); i > 0; i = int(math.Floor(float64(i)/2)) {
-		out = append(out, i)
+func (a *AnimArr) generateShellSortGaps() []int {   // Generate A083318 gaps  O(n^(3/2))
+	var out = []int{1}
+	for i, k := 0, 1; k <= int(math.Floor(float64(len(a.Data))/2)); i, k = i + 1, int(math.Ceil(math.Pow(2, float64(i)) + 1)) {
+		println(k, "k")
+		out = append(out, k)
 	}
-	a.ArrayAccesses++ // In for loop
 	return out
 }
 
 func (a *AnimArr) ShellSort() {
 	gapSequence := a.generateShellSortGaps()
-	for _, gap := range gapSequence {
-		for i := gap; a.Sorted && i < len(a.Data); i++ {
+	for i, gap := len(gapSequence)-1, gapSequence[len(gapSequence)-1]; i >= 0; i, gap = i - 1, gapSequence[i] {  // Go through array backwards
+		println("Gap:", gap)
+		for i := gap; !a.Sorted && i < len(a.Data); i++ {
 			temp := a.Data[i]
 			for a.Active = i; a.Active >= gap && a.Data[a.Active-gap] > temp; a.Active -= gap {
 				a.Comparisons++  // Remember, not counting Comparisons unless they compare an element of a.Data
