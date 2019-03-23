@@ -40,5 +40,6 @@ func (a *AnimArr) MergeSort(start, end int) {  // Using a quick sort to merge li
 
 		a.mergeArrays(start, mid, end, &MS_SLEEP)
 		time.Sleep(MS_SLEEP)
+		a.totalSleepTime += MS_SLEEP.Seconds()
 	}
 }

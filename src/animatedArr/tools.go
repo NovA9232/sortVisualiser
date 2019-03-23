@@ -38,7 +38,10 @@ func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bo
 		a.Active = i
 		a.Data[i] = newSlice[i-start]
 		a.ArrayAccesses++
-		if sleep { time.Sleep(*sleepTime) }  // Sleep for half the time cause this bit should be quick
+		if sleep {
+			time.Sleep(*sleepTime)
+			a.totalSleepTime += sleepTime.Seconds()
+		}
 	}
 }
 

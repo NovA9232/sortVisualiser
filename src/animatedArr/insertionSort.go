@@ -14,6 +14,7 @@ func (a *AnimArr) InsertionSort() {
 			a.ArrayAccesses += 2 // In for loop
 			a.swapElements(j, j-1)
 			time.Sleep(INST_SLEEP)
+			a.totalSleepTime += INST_SLEEP.Seconds()
 		}
 	}
 }

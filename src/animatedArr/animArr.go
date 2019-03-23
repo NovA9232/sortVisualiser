@@ -41,6 +41,9 @@ type AnimArr struct {
 	Linear				bool
 	ColorOnly			bool // Do not show height if true
 	Showcase			bool  // If showcase is running
+	SleepMultiplier float32
+	totalSleepTime float64
+	totalTime float64
 }
 
 func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly bool, nonLinVarianceMult int) {  // nonLinVarianceMult is a multiplier for how variant the data is if linear is false
@@ -58,17 +61,20 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
 	a.ColorOnly = colorOnly
 	a.Sorted		= a.Linear
 	a.Sorting   = false
+	a.SleepMultiplier = 10
+	a.totalSleepTime = 0
+	a.totalTime = 0
 
-	oNlogN := time.Duration(float64(a.lineNum) * math.Log(float64(a.lineNum)))
-	oNSqrd := time.Duration(math.Pow(float64(a.lineNum), 2))
+	oNlogN := float32(float64(a.lineNum) * math.Log(float64(a.lineNum)))
+	oNSqrd := float32(math.Pow(float64(a.lineNum), 2))
 
-  QS_SLEEP = time.Second * 8 / oNlogN          // O(n log n)
+  QS_SLEEP = time.Duration(float32(time.Second) * a.SleepMultiplier / oNlogN)          // O(n log n)
   CHANGE_SLEEP = QS_SLEEP
-  MS_SLEEP = time.Second * 2 * 10 / oNlogN  // O(n log n)
-  BBL_SLEEP = time.Second * 2 * 6 / oNSqrd   // O(n^2)
-  INST_SLEEP = time.Second * 2 * 6 / oNSqrd	 // O(n^2)
-  SHL_SLEEP = time.Second * 2 * 10 / time.Duration(math.Pow(float64(a.lineNum), 1.5))   // O(n^(3/2)) 
-  CCT_SLEEP = time.Second * 2 * 10 / oNSqrd  // O(n^2)
+  MS_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNlogN)  // O(n log n)
+  BBL_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)   // O(n^2)
+  INST_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)	 // O(n^2)
+  SHL_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / float32(math.Pow(float64(a.lineNum), 1.5)))   // O(n^(3/2)) 
+  CCT_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)  // O(n^2)
 
 	if a.Linear {
 		a.Data = a.GenerateLinear(0, a.H, a.H/float32(a.lineNum))
@@ -128,6 +134,13 @@ func (a *AnimArr) Draw() {
 		if a.Comparisons > 0 {
 			rl.DrawText(fmt.Sprintf("Comparisons: %d", a.Comparisons), 10, 60, 20, rl.LightGray)
 		}
+		if a.totalTime > 0 {
+			rl.DrawText(fmt.Sprintf("Actual time: %f", a.totalTime), 10, 110, 20, rl.LightGray)
+			rl.DrawText(fmt.Sprintf("Real time: %f", a.totalTime-a.totalSleepTime), 10, 130, 20, rl.LightGray)
+		}
+		if a.totalSleepTime > 0 {
+			rl.DrawText(fmt.Sprintf("Total sleep time: %f", a.totalSleepTime), 10, 150, 20, rl.LightGray)
+		}
 	}
 }
 
@@ -173,6 +186,8 @@ func (a *AnimArr) Update() {
 		} else if rl.IsKeyPressed(rl.KeyP) {
 			go a.RunShowcase()
 		}
+	} else {
+		a.totalTime += float64(rl.GetFrameTime())
 	}
 }
 
@@ -189,6 +204,8 @@ func (a *AnimArr) DoSort(sort string) {
 	a.Sorted = false
 	a.ArrayAccesses = 0
 	a.Comparisons = 0
+	a.totalSleepTime = 0
+	a.totalTime = 0
 	if sort == "quick" {
 		a.CurrentText = "Quick Sort"
 		go func() {

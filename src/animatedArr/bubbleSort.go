@@ -11,6 +11,7 @@ func (a *AnimArr) mainBubble(i int, swapped *bool, sleepTime *time.Duration) {  
     a.swapElements(i, i+1)
     *swapped = true
     time.Sleep(*sleepTime)
+		a.totalSleepTime += sleepTime.Seconds()
   }
   a.Comparisons++ // Add in case
   a.ArrayAccesses += 2
