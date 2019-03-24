@@ -46,7 +46,7 @@ func main() {
 	rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "Sort Visualiser")
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(144)
 
 	anim := &animatedArr.AnimArr{}
 	anim.Init(float32(screenWidth), float32(screenHeight), DEFAULT_LINE_WIDTH, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here

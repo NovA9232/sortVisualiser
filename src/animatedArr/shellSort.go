@@ -25,6 +25,7 @@ func (a *AnimArr) ShellSort() {
 				a.Active2 = a.Active-gap
 				a.Data[a.Active] = a.Data[a.Active2]
 				time.Sleep(SHL_SLEEP)
+				a.totalSleepTime += SHL_SLEEP.Seconds()
 				a.ArrayAccesses += 3 // 2+ One in for loop
 			}
 			a.Data[a.Active] = temp

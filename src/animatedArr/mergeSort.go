@@ -29,7 +29,7 @@ func (a *AnimArr) mergeArrays(start, mid, end int, sleepTime *time.Duration) {
 		count++
 	}
 	sorted = append(append(sorted, left...), right...)
-	a.changeDataBetween(start, end, sorted, true, &MS_SLEEP)
+	a.changeDataBetween(start, end, sorted, MS_SLEEP)
 }
 
 func (a *AnimArr) MergeSort(start, end int) {  // Using a quick sort to merge lists

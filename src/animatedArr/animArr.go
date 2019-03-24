@@ -135,7 +135,7 @@ func (a *AnimArr) Draw() {
 			rl.DrawText(fmt.Sprintf("Comparisons: %d", a.Comparisons), 10, 60, 20, rl.LightGray)
 		}
 		if a.totalTime > 0 {
-			rl.DrawText(fmt.Sprintf("Actual time: %f", a.totalTime), 10, 110, 20, rl.LightGray)
+			rl.DrawText(fmt.Sprintf("Our time: %f", a.totalTime), 10, 110, 20, rl.LightGray)
 			rl.DrawText(fmt.Sprintf("Real time: %f", a.totalTime-a.totalSleepTime), 10, 130, 20, rl.LightGray)
 		}
 		if a.totalSleepTime > 0 {
@@ -209,7 +209,9 @@ func (a *AnimArr) DoSort(sort string) {
 	if sort == "quick" {
 		a.CurrentText = "Quick Sort"
 		go func() {
+			startTime := time.Now()
 			a.QuickSort(0, len(a.Data))
+			println("AAA:", time.Since(startTime).Seconds())
 			a.resetVals()
 		}()
 	} else if sort == "bogo" {

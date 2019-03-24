@@ -6,10 +6,12 @@ import (
 
 func RegularQuickSort(arr []float32) []float32 {  // Just a quick sort to sort the array for comparison (if needed)
 	if len(arr) < 2 { return arr }
-	var left	 []float32
-	var middle []float32
-	var right  []float32
-	var pivot		 float32 = arr[len(arr)/2]
+	var (
+		left	 []float32
+		middle []float32
+		right  []float32
+		pivot		 float32 = arr[len(arr)/2]
+	)
 
 	for i := 0; i < len(arr); i++ {
 		if arr[i] < pivot {
@@ -38,7 +40,6 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 			if a.Data[i] < pivot {
 				a.Comparisons++
 				left = append(left, a.Data[i])
-				a.ArrayAccesses++
 			} else if a.Data[i] > pivot {
 				a.Comparisons++
 				right = append(right, a.Data[i])
@@ -46,13 +47,12 @@ func (a *AnimArr) QuickSort(start, end int) {   // Start and end of part of arra
 			} else {
 				a.Comparisons += 2 // Will have had to compare the other two, but wouldn't have added on.
 				middle = append(middle, a.Data[i])
-				a.ArrayAccesses++
 			}
-			a.ArrayAccesses++  // 1 in for loop
+			a.ArrayAccesses++
 		}
 
 		a.PivotInd = -1
-		a.changeDataBetween(start, end, append(append(left, middle...), right...), true, &QS_SLEEP)
+		a.changeDataBetween(start, end, append(append(left, middle...), right...), QS_SLEEP)
 		a.QuickSort(start, start+len(left))
 		a.QuickSort(start+len(left)+len(middle), start+len(left)+len(middle)+len(right))
 	}

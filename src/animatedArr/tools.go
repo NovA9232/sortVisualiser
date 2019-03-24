@@ -33,15 +33,13 @@ func (a *AnimArr) swapElements(i1, i2 int) {
 	a.ArrayAccesses += 2
 }
 
-func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleep bool, sleepTime *time.Duration) {
+func (a *AnimArr) changeDataBetween(start, end int, newSlice []float32, sleepTime time.Duration) {
 	for i := start; i < end; i++ {
 		a.Active = i
 		a.Data[i] = newSlice[i-start]
 		a.ArrayAccesses++
-		if sleep {
-			time.Sleep(*sleepTime)
-			a.totalSleepTime += sleepTime.Seconds()
-		}
+		a.totalSleepTime += sleepTime.Seconds()
+		time.Sleep(sleepTime)
 	}
 }
 
