@@ -16,13 +16,13 @@ var (
   INST_SLEEP time.Duration
   SHL_SLEEP time.Duration
   CCT_SLEEP time.Duration
+  COMB_SLEEP time.Duration
 
   SHUFFLE_SLEEP = time.Microsecond * 500
 )
 
 type AnimArr struct {
 	Data					[]float32
-	sortedData		[]int
 	lineNum				int
 	lineWidth			int
 	Active				int		// Index of current element being operated on.
@@ -75,6 +75,7 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
   INST_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)	 // O(n^2)
   SHL_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / float32(math.Pow(float64(a.lineNum), 1.5)))   // O(n^(3/2)) 
   CCT_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)  // O(n^2)
+  COMB_SLEEP = time.Duration(float32(time.Second) * a.SleepMultiplier / oNlogN)  // O(n log n)
 
 	if a.Linear {
 		a.Data = a.GenerateLinear(0, a.H, a.H/float32(a.lineNum))
@@ -174,6 +175,8 @@ func (a *AnimArr) Update() {
 			a.DoSort("merge")
 		} else if rl.IsKeyPressed(rl.KeySix) {
 			a.DoSort("shaker")
+		} else if rl.IsKeyPressed(rl.KeySeven) {
+			a.DoSort("comb")
 		} else if rl.IsKeyPressed(rl.KeyNine) {
 			a.DoSort("bogo")
 		} else if rl.IsKeyPressed(rl.KeyL) {
@@ -250,6 +253,12 @@ func (a *AnimArr) DoSort(sort string) {
       a.CocktailShakerSort()
       a.resetVals()
     }()
+	} else if sort == "comb" {
+		a.CurrentText = "Comb Sort"
+		go func() {
+			a.CombSort()
+			a.resetVals()
+		}()
 	} else {
 		panic("Invalid sort: "+sort)
 	}

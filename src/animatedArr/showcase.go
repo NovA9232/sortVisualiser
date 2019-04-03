@@ -7,6 +7,8 @@ import (
 func (a *AnimArr) showcaseRstr() {
 	a.ArrayAccesses = 0
 	a.Comparisons = 0
+	a.totalTime = 0
+	a.totalSleepTime = 0
 	a.Sorting = true
 	a.Sorted = false
 	a.Shuffle(2, true, false)
@@ -19,12 +21,14 @@ func (a *AnimArr) RunShowcase() {
 	a.showcaseRstr()
 	a.CurrentText = "Quick Sort"
 	a.QuickSort(0, len(a.Data))
+	a.Sorted = true
 	a.resetVals()
 
 	time.Sleep(time.Second)
 	a.showcaseRstr()
 	a.CurrentText = "Merge Sort"
 	a.MergeSort(0, len(a.Data))
+	a.Sorted = true
 	a.resetVals()
 
 	time.Sleep(time.Second)

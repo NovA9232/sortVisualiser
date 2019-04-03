@@ -11,6 +11,7 @@ const (
 	WIN_SIZE_CHECK_DELAY = 0.1
 	DEFAULT_LINE_WIDTH = 10
 	LINE_WIDTH_INCREMENT = 2
+	NON_LINEAR_VARIANCE = 10
 )
 
 var (
@@ -30,7 +31,7 @@ func checkScreenSizeChange(a *animatedArr.AnimArr) {
 		screenWidth = w
 		screenHeight = h
 		println("Window changed size")
-		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, a.Linear, a.ColorOnly, 2)
+		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, a.Linear, a.ColorOnly, NON_LINEAR_VARIANCE)
 	}
 }
 
@@ -38,7 +39,7 @@ func changeLineWidth(a *animatedArr.AnimArr, amount int) {
 	newWidth := currLineWidth + amount
 	if newWidth > 0 && newWidth < screenWidth {
 		currLineWidth = newWidth
-		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, a.Linear, a.ColorOnly, 2)
+		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, a.Linear, a.ColorOnly, NON_LINEAR_VARIANCE)
 	}
 }
 
@@ -49,7 +50,7 @@ func main() {
 	rl.SetTargetFPS(144)
 
 	anim := &animatedArr.AnimArr{}
-	anim.Init(float32(screenWidth), float32(screenHeight), DEFAULT_LINE_WIDTH, true, false, 2)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(float32(screenWidth), float32(screenHeight), DEFAULT_LINE_WIDTH, true, false, NON_LINEAR_VARIANCE)  // Input line thickness, if it is linear, and if it is color only here
 
 	var checkTimer float32 = 0
 

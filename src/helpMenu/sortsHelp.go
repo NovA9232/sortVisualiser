@@ -24,7 +24,7 @@ func NewSortsKeyBindMenu() *SortKeybindMenu {
 
 func (h *SortKeybindMenu) genTextPositions() {
 	h.textPositions = []int32{}
-	for i := int32(0); i < 8; i++ {
+	for i := int32(0); i < 9; i++ {
 		h.textPositions = append(h.textPositions, int32(h.pos.Y+10) + (i*30))
 	}
 }
@@ -69,7 +69,10 @@ func (h *SortKeybindMenu) Draw() {
 	rl.DrawText("6", h.g1x, h.textPositions[6], fontSize, rl.Black)
 	rl.DrawText("Cocktail Shaker Sort.", h.g2x, h.textPositions[6], fontSize, rl.Black)
 
-	rl.DrawText("9", h.g1x, h.textPositions[7], fontSize, rl.Black)
-	rl.DrawText("Bogo Sort.", h.g2x, h.textPositions[7], fontSize, rl.Black)
+	rl.DrawText("7", h.g1x, h.textPositions[7], fontSize, rl.Black)
+	rl.DrawText("Comb Sort.", h.g2x, h.textPositions[7], fontSize, rl.Black)
+
+	rl.DrawText("9", h.g1x, h.textPositions[8], fontSize, rl.Black)
+	rl.DrawText("Bogo Sort.", h.g2x, h.textPositions[8], fontSize, rl.Black)
 
 }
