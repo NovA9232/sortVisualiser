@@ -35,19 +35,17 @@ func checkScreenSizeChange(a *animatedArr.AnimArr) {
 	}
 }
 
-func changeLineWidth(a *animatedArr.AnimArr, amount int) {
-	newWidth := currLineWidth + amount
-	if newWidth > 0 && newWidth < screenWidth {
-		currLineWidth = newWidth
-		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, a.Linear, a.ColorOnly, NON_LINEAR_VARIANCE)
-	}
-}
 
 func main() {
+	animatedArr.ScreenWidth = &screenWidth
+	animatedArr.ScreenHeight = &screenHeight
+
 	rl.SetConfigFlags(rl.FlagVsyncHint)
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "Sort Visualiser")
 	rl.SetTargetFPS(144)
+
+	rl.InitAudioDevice()
 
 	anim := &animatedArr.AnimArr{}
 	anim.Init(float32(screenWidth), float32(screenHeight), DEFAULT_LINE_WIDTH, true, false, NON_LINEAR_VARIANCE)  // Input line thickness, if it is linear, and if it is color only here
@@ -59,12 +57,6 @@ func main() {
 
 	for !rl.WindowShouldClose() {
 		if !anim.Sorting && !anim.Shuffling && !anim.Showcase {
-			if rl.IsKeyPressed(rl.KeyEqual) || rl.IsKeyPressed(rl.KeyKpAdd) { // Treat "=" like plus sign
-				changeLineWidth(anim, LINE_WIDTH_INCREMENT)
-			} else if rl.IsKeyPressed(rl.KeyMinus) || rl.IsKeyPressed(rl.KeyKpSubtract) {
-				changeLineWidth(anim, -LINE_WIDTH_INCREMENT)
-			}
-
 			checkTimer += rl.GetFrameTime()
 			if checkTimer >= WIN_SIZE_CHECK_DELAY {
 				checkScreenSizeChange(anim)

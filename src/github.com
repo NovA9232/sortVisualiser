@@ -1,1 +1,1 @@
-/home/josh/go//src/github.com
+/home/josh/go/src/github.com/

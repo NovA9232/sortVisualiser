@@ -7,6 +7,8 @@ import (
   "github.com/gen2brain/raylib-go/raylib"
 )
 
+const NON_LINEAR_VARIANCE = 10
+
 var (
   // Base speeds (usually~ in time per comparison/change)
   QS_SLEEP time.Duration
@@ -19,6 +21,9 @@ var (
   COMB_SLEEP time.Duration
 
   SHUFFLE_SLEEP = time.Microsecond * 500
+
+  ScreenWidth *int
+  ScreenHeight *int
 )
 
 type AnimArr struct {
@@ -27,29 +32,36 @@ type AnimArr struct {
 	lineWidth			int
 	Active				int		// Index of current element being operated on.
 	Active2				int   // Secondary active, for swapping elements.
-	PivotInd			int   // For highlighting pivot when doing quickSort.
-	nonLinearMult int
-	ArrayAccesses int
-	Comparisons		int
-  W             float32
-  H             float32
-	maxValue			float32
-	CurrentText   string
-	Sorted				bool
-	Sorting				bool
-	Shuffling			bool
-	Linear				bool
-	ColorOnly			bool // Do not show height if true
-	Showcase			bool  // If showcase is running
+	PivotInd				int   // For highlighting pivot when doing quickSort.
+	nonLinearMult		int
+	ArrayAccesses		int
+	Comparisons			int
+	W             float32
+	H             float32
+	beepSound	 rl.Sound
+	lastPitchShift	float32
+	lastActive			int
+	maxValue		  float32
+	CurrentText		string
+	Sorted			  bool
+	Sorting			  bool
+	Shuffling		  bool
+	Linear			  bool
+	ColorOnly		  bool // Do not show height if true
+	Showcase			  bool  // If showcase is running
 	SleepMultiplier float32
-	totalSleepTime float64
-	totalTime float64
+	totalSleepTime  float64
+	totalTime		 float64
 }
 
 func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly bool, nonLinVarianceMult int) {  // nonLinVarianceMult is a multiplier for how variant the data is if linear is false
-  a.W, a.H = width, height
+	a.W, a.H = width, height
 	a.lineWidth = lineWidth
 	a.lineNum = int(math.Floor(float64(a.W/float32(a.lineWidth))))
+
+	//a.beepSound = rl.LoadSound("src/sounds/boop.wav")
+	a.lastPitchShift = 1
+	a.lastActive = -1
 
 	a.Active		= -1
 	a.Active2		= -1
@@ -68,14 +80,14 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
 	oNlogN := float32(float64(a.lineNum) * math.Log(float64(a.lineNum)))
 	oNSqrd := float32(math.Pow(float64(a.lineNum), 2))
 
-  QS_SLEEP = time.Duration(float32(time.Second) * a.SleepMultiplier / oNlogN)          // O(n log n)
-  CHANGE_SLEEP = QS_SLEEP
-  MS_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNlogN)  // O(n log n)
-  BBL_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)   // O(n^2)
-  INST_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)	 // O(n^2)
-  SHL_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / float32(math.Pow(float64(a.lineNum), 1.5)))   // O(n^(3/2)) 
-  CCT_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)  // O(n^2)
-  COMB_SLEEP = time.Duration(float32(time.Second) * a.SleepMultiplier / oNlogN)  // O(n log n)
+	QS_SLEEP = time.Duration(float32(time.Second) * a.SleepMultiplier / oNlogN)          // O(n log n)
+	CHANGE_SLEEP = QS_SLEEP
+	MS_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNlogN)  // O(n log n)
+	BBL_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)   // O(n^2)
+	INST_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)	 // O(n^2)
+	SHL_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / float32(math.Pow(float64(a.lineNum), 1.5)))   // O(n^(3/2)) 
+	CCT_SLEEP = time.Duration(float32(time.Second) * 2 * a.SleepMultiplier / oNSqrd)  // O(n^2)
+	COMB_SLEEP = time.Duration(float32(time.Second) * a.SleepMultiplier / oNlogN)  // O(n log n)
 
 	if a.Linear {
 		a.Data = a.GenerateLinear(0, a.H, a.H/float32(a.lineNum))
@@ -145,6 +157,16 @@ func (a *AnimArr) Draw() {
 	}
 }
 
+func (a *AnimArr) changeLineWidth(amount int) {
+	newWidth := a.lineWidth + amount
+	scrW := *ScreenWidth
+	scrH := *ScreenHeight
+	if newWidth > 0 && newWidth < scrW {
+		a.lineWidth = newWidth
+		a.Init(float32(scrW), float32(scrH), a.lineWidth, a.Linear, a.ColorOnly, NON_LINEAR_VARIANCE)
+	}
+}
+
 func (a *AnimArr) Update() {
 	if rl.IsKeyPressed(rl.KeyC) {
 		a.ColorOnly = !a.ColorOnly
@@ -155,7 +177,25 @@ func (a *AnimArr) Update() {
 		println("Stopping...")
 	}
 
+	/*
+	if a.lastActive != a.Active {
+		if a.Active > -1 {
+			rl.SetSoundPitch(a.beepSound, 1/a.lastPitchShift)
+			pitchShift := 0.5 + (a.Data[a.Active]/a.maxValue)
+			rl.SetSoundPitch(a.beepSound, pitchShift)
+			rl.PlaySound(a.beepSound)
+			a.lastPitchShift = pitchShift
+		}
+		a.lastActive = a.Active
+	}
+	*/
+
 	if !a.Sorting && !a.Shuffling && !a.Showcase {
+		mouseMv := int(rl.GetMouseWheelMove())
+		if math.Abs(float64(mouseMv)) > 0 {
+			a.changeLineWidth(mouseMv)
+		}
+
 		if rl.IsKeyPressed(rl.KeyS) {
 			a.ArrayAccesses = 0
 			a.Comparisons = 0
