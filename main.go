@@ -31,7 +31,7 @@ func checkScreenSizeChange(a *animatedArr.AnimArr) {
 		screenWidth = w
 		screenHeight = h
 		println("Window changed size")
-		a.Init(float32(screenWidth), float32(screenHeight), currLineWidth, a.Linear, a.ColorOnly, NON_LINEAR_VARIANCE)
+		a.Init(float32(screenWidth), float32(screenHeight), a.LineWidth, a.Linear, a.ColorOnly, a.Dots, NON_LINEAR_VARIANCE)
 	}
 }
 
@@ -45,10 +45,10 @@ func main() {
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "Sort Visualiser")
 	rl.SetTargetFPS(144)
 
-	rl.InitAudioDevice()
+	//rl.InitAudioDevice()
 
 	anim := &animatedArr.AnimArr{}
-	anim.Init(float32(screenWidth), float32(screenHeight), DEFAULT_LINE_WIDTH, true, false, NON_LINEAR_VARIANCE)  // Input line thickness, if it is linear, and if it is color only here
+	anim.Init(float32(screenWidth), float32(screenHeight), DEFAULT_LINE_WIDTH, true, false, false, NON_LINEAR_VARIANCE)  // Input line thickness, if it is linear, and if it is color only here
 
 	var checkTimer float32 = 0
 

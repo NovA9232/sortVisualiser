@@ -29,7 +29,7 @@ var (
 type AnimArr struct {
 	Data					[]float32
 	lineNum				int
-	lineWidth			int
+	LineWidth			int
 	Active				int		// Index of current element being operated on.
 	Active2				int   // Secondary active, for swapping elements.
 	PivotInd				int   // For highlighting pivot when doing quickSort.
@@ -48,16 +48,17 @@ type AnimArr struct {
 	Shuffling		  bool
 	Linear			  bool
 	ColorOnly		  bool // Do not show height if true
+	Dots				  bool // Draw with dots
 	Showcase			  bool  // If showcase is running
 	SleepMultiplier float32
 	totalSleepTime  float64
 	totalTime		 float64
 }
 
-func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly bool, nonLinVarianceMult int) {  // nonLinVarianceMult is a multiplier for how variant the data is if linear is false
+func (a *AnimArr) Init(width, height float32, LineWidth int, linear, colorOnly, dots bool, nonLinVarianceMult int) {  // nonLinVarianceMult is a multiplier for how variant the data is if linear is false
 	a.W, a.H = width, height
-	a.lineWidth = lineWidth
-	a.lineNum = int(math.Floor(float64(a.W/float32(a.lineWidth))))
+	a.LineWidth = LineWidth
+	a.lineNum = int(math.Floor(float64(a.W/float32(a.LineWidth))))
 
 	//a.beepSound = rl.LoadSound("src/sounds/boop.wav")
 	a.lastPitchShift = 1
@@ -71,6 +72,7 @@ func (a *AnimArr) Init(width, height float32, lineWidth int, linear, colorOnly b
 	a.Linear		= linear
 	a.nonLinearMult = nonLinVarianceMult
 	a.ColorOnly = colorOnly
+	a.Dots = dots
 	a.Sorted		= a.Linear
 	a.Sorting   = false
 	a.SleepMultiplier = 10
@@ -100,8 +102,8 @@ func (a *AnimArr) getLineY(val float32) float32 {   // Lower case so not exporte
 	return a.H-((float32(val)/float32(a.lineNum*a.nonLinearMult))*a.H)
 }
 
-func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
-	var x = float32((i*a.lineWidth)+(a.lineWidth/2))
+func (a *AnimArr) drawLineOrDot(i int, colour rl.Color) {  // English spelling
+	var x = float32((i*a.LineWidth)+(a.LineWidth/2))
 	var y float32
 	if a.ColorOnly {
 		y = 0
@@ -110,7 +112,12 @@ func (a *AnimArr) drawLine(i int, colour rl.Color) {  // English spelling
 	} else {
 		y = a.getLineY(a.Data[i])
 	}
-	rl.DrawLineEx(rl.NewVector2(x, a.H), rl.NewVector2(x, y), float32(a.lineWidth), colour)
+	if a.Dots && !a.ColorOnly {
+		radius := float32(a.LineWidth)/2
+		rl.DrawCircle(int32(x), int32(y + radius), radius, colour)
+	} else {
+		rl.DrawLineEx(rl.NewVector2(x, a.H), rl.NewVector2(x, y), float32(a.LineWidth), colour)
+	}
 }
 
 func (a *AnimArr) Draw() {
@@ -129,12 +136,13 @@ func (a *AnimArr) Draw() {
 			//clr = rl.NewColor((normal/2)+127, (normal), (normal/3)+70, 255)  // Off yellow + coral
 			//clr = rl.NewColor((normal/2)+127, (normal), (normal/3)+50, 255)  // Fire
 			//clr = rl.NewColor(normal, normal, normal, 255)  // Grayscale
-			//clr = rl.NewColor(normal, (normal/2)+127, normal/3, 255)  // Zesty (green --> yellow)
-			clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)  // Twilight/Vapourwave
+			clr = rl.NewColor(normal, (normal/2)+127, normal/3, 255)  // Zesty (green --> yellow)
+			//clr = rl.NewColor(normal, (normal/3), (normal/2)+127, 255)  // Twilight/Vapourwave
       //clr = rl.NewColor(128-(normal/2), 191-(normal/4), normal, 255)  // Sea
       //clr = rl.NewColor(((normal)/3)+85, 128-(normal/2), 170-(normal/3), 255)  // Soft Vapourwave
 		}
-		a.drawLine(i, clr)
+
+		a.drawLineOrDot(i, clr)
 	}
 
 	rl.DrawText(a.CurrentText, 10, 10, 30, rl.LightGray)
@@ -158,18 +166,26 @@ func (a *AnimArr) Draw() {
 }
 
 func (a *AnimArr) changeLineWidth(amount int) {
-	newWidth := a.lineWidth + amount
+	newWidth := a.LineWidth + amount
 	scrW := *ScreenWidth
 	scrH := *ScreenHeight
 	if newWidth > 0 && newWidth < scrW {
-		a.lineWidth = newWidth
-		a.Init(float32(scrW), float32(scrH), a.lineWidth, a.Linear, a.ColorOnly, NON_LINEAR_VARIANCE)
+		a.LineWidth = newWidth
+		a.Init(float32(scrW), float32(scrH), a.LineWidth, a.Linear, a.ColorOnly, a.Dots, NON_LINEAR_VARIANCE)
 	}
 }
 
 func (a *AnimArr) Update() {
 	if rl.IsKeyPressed(rl.KeyC) {
 		a.ColorOnly = !a.ColorOnly
+		//a.Dots = false
+	}
+
+	if rl.IsKeyPressed(rl.KeyD) {
+		a.Dots = !a.Dots
+		if a.ColorOnly {
+			a.ColorOnly = false
+		}
 	}
 
 	if rl.IsKeyPressed(rl.KeyQ) {
